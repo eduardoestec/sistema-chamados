@@ -19,7 +19,7 @@ const [historico, setHistorico] = useState<any[]>([])
   const [novoStatus, setNovoStatus] = useState('')
   const [observacao, setObservacao] = useState('')
   const [salvando, setSalvando] = useState(false)
-  const [adminId, setAdminId] = useState(null)
+  const [adminId, setAdminId] = useState<string | null>(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
