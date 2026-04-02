@@ -29,7 +29,7 @@ const [historico, setHistorico] = useState<any[]>([])
     })
   }, [])
 
-  async function carregarChamado(id) {
+  async function carregarChamado(id: string) {
     const { data: c } = await supabase.from('chamados').select('*').eq('id', id).single()
     const { data: h } = await supabase.from('chamado_historico').select('*').eq('chamado_id', id).order('criado_em', { ascending: true })
     setChamado(c)
