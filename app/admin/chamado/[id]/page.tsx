@@ -12,10 +12,10 @@ const statusLabel = { enviado: 'Enviado', recebido: 'Recebido', em_analise: 'Em 
 const statusOrdem = ['enviado', 'recebido', 'em_analise', 'em_andamento', 'resolvido']
 const urgenciaLabel = { baixa: 'Baixa', media: 'Media', alta: 'Alta', muito_alta: 'Muito Alta' }
 
-export default function DetalheChamado({ params }) {
+export default function DetalheChamado({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
-  const [chamado, setChamado] = useState(null)
-  const [historico, setHistorico] = useState([])
+  const [chamado, setChamado] = useState<any>(null)
+const [historico, setHistorico] = useState<any[]>([])
   const [novoStatus, setNovoStatus] = useState('')
   const [observacao, setObservacao] = useState('')
   const [salvando, setSalvando] = useState(false)
