@@ -14,7 +14,7 @@ const urgenciaLabel: Record<string, string> = { baixa: 'Baixa', media: 'Media', 
 
 export default function DetalheChamado({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
-  const [chamados, setChamados] = useState<any[]>([])
+  const [chamado, setChamado] = useState<any>(null)
 const [historico, setHistorico] = useState<any[]>([])
   const [novoStatus, setNovoStatus] = useState('')
   const [observacao, setObservacao] = useState('')
