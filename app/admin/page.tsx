@@ -1,117 +1,83 @@
-'use client'
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
-import Link from 'next/link'
-import { QrCode, BarChart2, LogOut, Wrench } from 'lucide-react'
+"use client"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabaseClient"
 
 type Chamado = {
   id: string
-  codigo_unico: string
-  tipo_problema: string
+  titulo: string
   descricao: string
   status: string
-  urgencia: string
+  prioridade: string
   criado_em: string
+  responsavel: string | null
 }
 
-export default function AdminPage() {
-  const router = useRouter()
-
-  // ⭐ CORREÇÃO REAL AQUI
-  const [chamados, setChamados] = useState<Array<Chamado>>([])
-  const [carregando, setCarregando] = useState<boolean>(true)
+export default function RelatoriosPage() {
+  const [chamados, setChamados] = useState<Chamado[]>([])
+  const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) {
-        router.push('/admin/login')
-        return
-      }
-      carregarDados()
-    })
+    carregarDados()
   }, [])
 
   async function carregarDados() {
     setCarregando(true)
 
     const { data, error } = await supabase
-      .from('chamados')
-      .select('*')
-      .order('criado_em', { ascending: false })
+      .from("chamados")
+      .select("*")
+      .order("criado_em", { ascending: false })
 
-    if (!error && data) {
-      // ⭐ CAST FINAL QUE REMOVE O NEVER[]
-      setChamados(data as unknown as Chamado[])
+    if (error) {
+      console.error("Erro ao buscar chamados:", error)
+      setChamados([])
+    } else {
+      setChamados(data as Chamado[])
     }
 
     setCarregando(false)
   }
 
-  async function sair() {
-    await supabase.auth.signOut()
-    router.push('/admin/login')
+  if (carregando) {
+    return (
+      <div style={{ padding: 20 }}>
+        <h1>Carregando relatórios...</h1>
+      </div>
+    )
   }
 
-  const emAberto = chamados.filter(c => c.status !== 'resolvido').length
-  const muitoAlta = chamados.filter(c => c.urgencia === 'muito_alta' && c.status !== 'resolvido').length
-
   return (
-    <main className='min-h-screen bg-gray-50 flex'>
+    <div style={{ padding: 20 }}>
+      <h1>Relatórios de Chamados</h1>
 
-      <aside className='w-20 bg-gray-900 flex flex-col items-center justify-between py-6'>
-        <div className='flex flex-col items-center gap-1'>
-          <div className='bg-yellow-400 rounded-xl w-12 h-12 flex items-center justify-center'>
-            <Wrench size={22} className='text-gray-900' />
-          </div>
-          <span className='text-white text-xs font-bold mt-1'>A.S</span>
-        </div>
+      {chamados.length === 0 && <p>Nenhum chamado encontrado.</p>}
 
-        <div className='flex flex-col items-center gap-6'>
-          <Link href='/admin/qrcodes' className='flex flex-col items-center gap-1'>
-            <QrCode size={20} className='text-white'/>
-            <span className='text-gray-400 text-xs'>QR Codes</span>
-          </Link>
+      <table border={1} cellPadding={10} style={{ marginTop: 20 }}>
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th>Status</th>
+            <th>Prioridade</th>
+            <th>Responsável</th>
+            <th>Data</th>
+          </tr>
+        </thead>
 
-          <Link href='/admin/relatorios' className='flex flex-col items-center gap-1'>
-            <BarChart2 size={20} className='text-white'/>
-            <span className='text-gray-400 text-xs'>Relatorios</span>
-          </Link>
-
-          <button onClick={sair} className='flex flex-col items-center gap-1'>
-            <LogOut size={20} className='text-white'/>
-            <span className='text-gray-400 text-xs'>Sair</span>
-          </button>
-        </div>
-      </aside>
-
-      <div className='flex-1 p-6'>
-        <h1 className='text-2xl font-bold mb-6'>Relatórios</h1>
-
-        <div className='grid grid-cols-3 gap-4'>
-          <div className='bg-white p-5 rounded-xl shadow'>
-            <p>Total</p>
-            <h2 className='text-3xl font-bold'>{chamados.length}</h2>
-          </div>
-
-          <div className='bg-white p-5 rounded-xl shadow'>
-            <p>Em Aberto</p>
-            <h2 className='text-3xl font-bold text-yellow-500'>{emAberto}</h2>
-          </div>
-
-          <div className='bg-white p-5 rounded-xl shadow'>
-            <p>Muito Urgentes</p>
-            <h2 className='text-3xl font-bold text-red-500'>{muitoAlta}</h2>
-          </div>
-        </div>
-
-        {carregando && <p className='mt-6'>Carregando...</p>}
-      </div>
-    </main>
+        <tbody>
+          {chamados.map((chamado) => (
+            <tr key={chamado.id}>
+              <td>{chamado.titulo}</td>
+              <td>{chamado.status}</td>
+              <td>{chamado.prioridade}</td>
+              <td>{chamado.responsavel ?? "-"}</td>
+              <td>
+                {new Date(chamado.criado_em).toLocaleDateString("pt-BR")}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
