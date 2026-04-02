@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 
-const statusLabel = { enviado: 'Enviado', recebido: 'Recebido', em_analise: 'Em Analise', em_andamento: 'Em Andamento', resolvido: 'Resolvido' }
+const statusLabel: Record<string, string> = { enviado: 'Enviado', recebido: 'Recebido', em_analise: 'Em Analise', em_andamento: 'Em Andamento', resolvido: 'Resolvido' }
 const statusOrdem = ['enviado', 'recebido', 'em_analise', 'em_andamento', 'resolvido']
 
 export default function AcompanharPage() {
