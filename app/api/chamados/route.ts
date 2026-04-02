@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabaseClient'
 
 function gerarCodigo() {
   const num = Math.floor(Math.random() * 9000) + 1000

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabaseClient'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ codigo: string }> }) {
   const { codigo } = await params
