@@ -6,7 +6,7 @@ const statusOrdem = ['enviado', 'recebido', 'em_analise', 'em_andamento', 'resol
 
 export default function AcompanharPage() {
   const [codigo, setCodigo] = useState('')
-  const [chamado, setChamado] = useState(null)
+  const [chamado, setChamado] = useState<any>(null)
   const [historico, setHistorico] = useState([])
   const [erro, setErro] = useState('')
   const [buscando, setBuscando] = useState(false)
