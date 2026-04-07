@@ -93,7 +93,7 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
   if (!chamado) return <div className='flex items-center justify-center min-h-screen'>Carregando...</div>
 
   return (
-    <main className='min-h-screen p-6 max-w-lg mx-auto'>
+    <main className='min-h-screen p-4 sm:p-6 max-w-lg mx-auto'>
       <button onClick={() => router.push('/admin')} className='text-sm text-gray-500 hover:text-gray-800 mb-4 block'>Voltar</button>
 
       <div className='bg-white rounded-2xl shadow p-5 mb-4'>
@@ -119,15 +119,15 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
 
       <div className='bg-white rounded-2xl shadow p-5 mb-4'>
         <p className='text-sm font-semibold text-gray-700 mb-3'>Atualizar Status</p>
-        <div className='grid grid-cols-2 gap-2 mb-4'>
+        <div className='grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4'>
           {statusOrdem.map(s => (
             <button key={s} onClick={() => setNovoStatus(s)}
-              className={novoStatus === s ? 'py-2 px-3 rounded-lg border text-sm font-medium bg-yellow-400 border-yellow-400 text-gray-900' : 'py-2 px-3 rounded-lg border text-sm font-medium bg-white border-gray-200 text-gray-600'}>
+              className={novoStatus === s ? 'py-2 px-3 rounded-lg border text-sm font-medium bg-[#767171] border-[#767171] text-white' : 'py-2 px-3 rounded-lg border text-sm font-medium bg-white border-gray-200 text-gray-600'}>
               {statusLabel[s]}
             </button>
           ))}
         </div>
-        <textarea className='w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 min-h-20 focus:outline-none focus:border-yellow-400 mb-3'
+        <textarea className='w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 min-h-20 focus:outline-none focus:border-[#767171] mb-3'
           placeholder='Observacao (opcional)...' value={observacao} onChange={e => setObservacao(e.target.value)} />
         <div className='mb-3'>
           <label className='block text-sm font-semibold text-gray-700 mb-2'>Adicionar Foto</label>
@@ -136,14 +136,14 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
             <div className='relative mt-2'>
               <img src={fotoEditada || fotoPreview} alt='Preview' className='w-full rounded-xl max-h-48 object-cover' />
               <button onClick={() => setAbrirEditor(true)}
-                className='absolute bottom-2 right-2 bg-yellow-400 text-gray-900 text-xs font-bold px-3 py-1 rounded-lg'>
+                className='absolute bottom-2 right-2 bg-[#767171] text-white text-xs font-bold px-3 py-1 rounded-lg'>
                 Editar Foto
               </button>
             </div>
           )}
         </div>
         <button onClick={salvar} disabled={salvando}
-          className='w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 rounded-xl transition disabled:opacity-50'>
+          className='w-full bg-[#767171] hover:bg-[#5a5555] text-white font-bold py-3 rounded-xl transition disabled:opacity-50'>
           {salvando ? 'Salvando...' : 'Salvar'}
         </button>
       </div>
@@ -153,7 +153,7 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
         <div className='flex flex-col gap-4'>
           {historico.map(h => (
             <div key={h.id} className='flex items-start gap-3 border-b border-gray-50 pb-3'>
-              <div className='w-2 h-2 rounded-full bg-yellow-400 mt-1.5 flex-shrink-0' />
+              <div className='w-2 h-2 rounded-full bg-[#767171] mt-1.5 flex-shrink-0' />
               <div className='flex-1'>
                 <div className='flex justify-between items-center mb-1'>
                   <p className='text-sm font-medium text-gray-700'>{statusLabel[h.status_novo]}</p>

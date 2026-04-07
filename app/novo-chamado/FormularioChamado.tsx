@@ -2,6 +2,24 @@
 import { useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import EditorFoto from '@/components/EditorFoto'
+import { Zap, Droplets, Lightbulb, Armchair, Monitor, Building2, HelpCircle, ArrowLeft, AlertTriangle, Minus, ChevronUp, ChevronDown } from 'lucide-react'
+
+const tipoIcons: Record<string, React.ReactNode> = {
+  Eletrica: <Zap size={18} />,
+  Hidraulica: <Droplets size={18} />,
+  Iluminacao: <Lightbulb size={18} />,
+  Mobiliario: <Armchair size={18} />,
+  Equipamentos: <Monitor size={18} />,
+  Infraestrutura: <Building2 size={18} />,
+  Outros: <HelpCircle size={18} />,
+}
+
+const urgenciaIcons: Record<string, React.ReactNode> = {
+  baixa: <ChevronDown size={16} />,
+  media: <Minus size={16} />,
+  alta: <ChevronUp size={16} />,
+  muito_alta: <AlertTriangle size={16} />,
+}
 
 export default function FormularioChamado() {
   const searchParams = useSearchParams()
@@ -48,34 +66,41 @@ export default function FormularioChamado() {
   }
 
   return (
-    <main className='min-h-screen p-6 max-w-lg mx-auto'>
+    <main className='min-h-screen p-4 sm:p-6 max-w-lg mx-auto'>
+      <button onClick={() => router.back()} className='flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-4'>
+        <ArrowLeft size={16} /> Voltar
+      </button>
       <h1 className='text-2xl font-bold text-gray-800 mb-1'>Novo Chamado</h1>
       <p className='text-sm text-gray-500 mb-6'>Sala: {sala}</p>
 
       <div className='mb-5'>
         <label className='block text-sm font-semibold text-gray-700 mb-2'>Tipo de Problema</label>
-        <div className='grid grid-cols-2 gap-2'>
+        <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
           {tipos.map(t => (
             <button key={t} onClick={() => setTipo(t)}
-              className={tipo === t ? 'py-2 px-3 rounded-lg border text-sm font-medium bg-yellow-400 border-yellow-400 text-gray-900' : 'py-2 px-3 rounded-lg border text-sm font-medium bg-white border-gray-200 text-gray-600'}>
-              {t}</button>
+              className={`flex items-center gap-2 py-3 px-4 rounded-xl border text-sm font-medium transition ${tipo === t ? 'bg-[#767171] border-[#767171] text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+              <span className={tipo === t ? 'text-white' : 'text-gray-400'}>{tipoIcons[t]}</span>
+              {t}
+            </button>
           ))}
         </div>
       </div>
 
       <div className='mb-5'>
         <label className='block text-sm font-semibold text-gray-700 mb-2'>Descricao</label>
-        <textarea className='w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 min-h-28 focus:outline-none focus:border-yellow-400'
+        <textarea className='w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 min-h-28 focus:outline-none focus:border-[#767171]'
           placeholder='Descreva o problema...' value={descricao} onChange={e => setDescricao(e.target.value)} />
       </div>
 
       <div className='mb-5'>
         <label className='block text-sm font-semibold text-gray-700 mb-2'>Urgencia</label>
-        <div className='grid grid-cols-2 gap-2'>
+        <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
           {urgencias.map(u => (
             <button key={u} onClick={() => setUrgencia(u)}
-              className={urgencia === u ? 'py-2 px-3 rounded-lg border text-sm font-medium bg-yellow-400 border-yellow-400 text-gray-900' : 'py-2 px-3 rounded-lg border text-sm font-medium bg-white border-gray-200 text-gray-600'}>
-              {urgenciaLabel[u]}</button>
+              className={`flex items-center gap-2 py-3 px-4 rounded-xl border text-sm font-medium transition ${urgencia === u ? 'bg-[#767171] border-[#767171] text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+              <span className={urgencia === u ? 'text-white' : 'text-gray-400'}>{urgenciaIcons[u]}</span>
+              {urgenciaLabel[u]}
+            </button>
           ))}
         </div>
       </div>
@@ -88,7 +113,7 @@ export default function FormularioChamado() {
           <div className='relative mt-2'>
             <img src={fotoEditada || fotoPreview} alt='Preview' className='w-full rounded-xl max-h-48 object-cover' />
             <button onClick={() => setAbrirEditor(true)}
-              className='absolute bottom-2 right-2 bg-yellow-400 text-gray-900 text-xs font-bold px-3 py-1 rounded-lg'>
+              className='absolute bottom-2 right-2 bg-[#767171] text-white text-xs font-bold px-3 py-1 rounded-lg'>
               Editar Foto
             </button>
           </div>
@@ -96,7 +121,7 @@ export default function FormularioChamado() {
       </div>
 
       <button onClick={enviar} disabled={enviando}
-        className='w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-4 rounded-xl text-lg transition disabled:opacity-50'>
+        className='w-full bg-[#767171] hover:bg-[#5a5555] text-white font-bold py-4 rounded-xl text-lg transition disabled:opacity-50'>
         {enviando ? 'Enviando...' : 'Enviar Chamado'}
       </button>
 

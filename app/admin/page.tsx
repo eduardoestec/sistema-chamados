@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
-import { QrCode, BarChart2, LogOut, Wrench } from 'lucide-react'
+import { QrCode, BarChart2, LogOut, Wrench, DoorOpen } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -56,23 +56,29 @@ export default function AdminPage() {
       {/* Sidebar */}
       <aside className='w-20 bg-gray-900 flex flex-col items-center justify-between py-6 flex-shrink-0'>
         <div className='flex flex-col items-center gap-1'>
-          <div className='bg-yellow-400 rounded-xl w-12 h-12 flex items-center justify-center'>
-            <Wrench size={22} className='text-gray-900' />
+          <div className='bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center'>
+            <Wrench size={22} className='text-white' />
           </div>
           <span className='text-white text-xs font-bold mt-1'>A.S</span>
         </div>
         <div className='flex flex-col items-center gap-6'>
-          <Link href='/admin/qrcodes' className='flex flex-col items-center gap-1 group'>
-            <div className='bg-gray-700 group-hover:bg-yellow-400 rounded-xl w-12 h-12 flex items-center justify-center transition'>
-              <QrCode size={20} className='text-white group-hover:text-gray-900 transition' />
+          <Link href='/admin/salas' className='flex flex-col items-center gap-1 group'>
+            <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition'>
+              <DoorOpen size={20} className='text-white transition' />
             </div>
-            <span className='text-gray-400 text-xs group-hover:text-yellow-400 transition text-center leading-tight'>QR Codes</span>
+            <span className='text-gray-400 text-xs group-hover:text-[#767171] transition text-center leading-tight'>Salas</span>
+          </Link>
+          <Link href='/admin/qrcodes' className='flex flex-col items-center gap-1 group'>
+            <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition'>
+              <QrCode size={20} className='text-white transition' />
+            </div>
+            <span className='text-gray-400 text-xs group-hover:text-[#767171] transition text-center leading-tight'>QR Codes</span>
           </Link>
           <Link href='/admin/relatorios' className='flex flex-col items-center gap-1 group'>
-            <div className='bg-gray-700 group-hover:bg-yellow-400 rounded-xl w-12 h-12 flex items-center justify-center transition'>
-              <BarChart2 size={20} className='text-white group-hover:text-gray-900 transition' />
+            <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition'>
+              <BarChart2 size={20} className='text-white transition' />
             </div>
-            <span className='text-gray-400 text-xs group-hover:text-yellow-400 transition text-center leading-tight'>Relatorios</span>
+            <span className='text-gray-400 text-xs group-hover:text-[#767171] transition text-center leading-tight'>Relatorios</span>
           </Link>
           <button onClick={sair} className='flex flex-col items-center gap-1 group'>
             <div className='bg-gray-700 group-hover:bg-red-500 rounded-xl w-12 h-12 flex items-center justify-center transition'>
@@ -84,7 +90,7 @@ export default function AdminPage() {
       </aside>
 
       {/* Conteudo principal */}
-      <div className='flex-1 p-6 overflow-auto'>
+      <div className='flex-1 p-4 sm:p-6 overflow-auto'>
 
         {/* Header */}
         <div className='mb-6'>
@@ -93,14 +99,14 @@ export default function AdminPage() {
         </div>
 
         {/* Cards de resumo */}
-        <div className='grid grid-cols-3 gap-4 mb-6'>
+        <div className='grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6'>
           <div className='bg-white rounded-2xl shadow p-5'>
             <p className='text-xs text-gray-400 mb-1'>Total de Chamados</p>
             <p className='text-3xl font-black text-gray-800'>{chamados.length}</p>
           </div>
           <div className='bg-white rounded-2xl shadow p-5'>
             <p className='text-xs text-gray-400 mb-1'>Em Aberto</p>
-            <p className='text-3xl font-black text-yellow-400'>{emAberto}</p>
+            <p className='text-3xl font-black text-[#767171]'>{emAberto}</p>
           </div>
           <div className='bg-white rounded-2xl shadow p-5'>
             <p className='text-xs text-gray-400 mb-1'>Urgencia Muito Alta</p>
@@ -109,7 +115,7 @@ export default function AdminPage() {
         </div>
 
         {/* Filtros */}
-        <div className='flex gap-2 mb-4'>
+        <div className='flex gap-2 mb-4 flex-wrap'>
           <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}
             className='border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none bg-white'>
             <option value=''>Todos os status</option>

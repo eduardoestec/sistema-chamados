@@ -9,7 +9,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 )
 
-const CORES = ['#fac800', '#05df72', '#fb2c36', '#6a7282', '#364153', '#fefce8', '#e5e7eb']
+const CORES = ['#767171', '#05df72', '#fb2c36', '#6a7282', '#364153', '#fefce8', '#e5e7eb']
 
 export default function RelatoriosPage() {
   const router = useRouter()
@@ -58,8 +58,8 @@ export default function RelatoriosPage() {
   const porUrgencia = agrupar('urgencia')
 
   return (
-    <main className='min-h-screen p-6 max-w-4xl mx-auto'>
-      <div className='flex justify-between items-center mb-6'>
+    <main className='min-h-screen p-4 sm:p-6 max-w-4xl mx-auto'>
+      <div className='flex justify-between items-center mb-6 flex-wrap gap-3'>
         <div>
           <h1 className='text-2xl font-bold text-gray-800'>Relatorios</h1>
           <p className='text-sm text-gray-500'>{chamados.length} chamados no total</p>
@@ -68,19 +68,19 @@ export default function RelatoriosPage() {
           <button onClick={() => router.push('/admin')} className='text-sm text-gray-500 hover:text-gray-800 border border-gray-200 px-4 py-2 rounded-xl'>
             Voltar
           </button>
-          <button onClick={exportarCSV} className='text-sm bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-4 py-2 rounded-xl'>
+          <button onClick={exportarCSV} className='text-sm bg-[#767171] hover:bg-[#5a5555] text-white font-bold px-4 py-2 rounded-xl'>
             Exportar CSV
           </button>
         </div>
       </div>
 
-      <div className='grid grid-cols-3 gap-4 mb-8'>
+      <div className='grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8'>
         <div className='bg-white rounded-2xl shadow p-5 text-center'>
           <p className='text-3xl font-black text-gray-800'>{chamados.length}</p>
           <p className='text-sm text-gray-500'>Total de Chamados</p>
         </div>
         <div className='bg-white rounded-2xl shadow p-5 text-center'>
-          <p className='text-3xl font-black text-yellow-400'>{chamados.filter(c => c.status !== 'resolvido').length}</p>
+          <p className='text-3xl font-black text-[#767171]'>{chamados.filter(c => c.status !== 'resolvido').length}</p>
           <p className='text-sm text-gray-500'>Em Aberto</p>
         </div>
         <div className='bg-white rounded-2xl shadow p-5 text-center'>
@@ -89,7 +89,7 @@ export default function RelatoriosPage() {
         </div>
       </div>
 
-      <div className='grid grid-cols-2 gap-4 mb-8'>
+      <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8'>
         <div className='bg-white rounded-2xl shadow p-5'>
           <p className='text-sm font-semibold text-gray-700 mb-4'>Por Tipo de Problema</p>
           <ResponsiveContainer width='100%' height={220}>
@@ -108,7 +108,7 @@ export default function RelatoriosPage() {
               <XAxis dataKey='name' tick={{ fontSize: 10 }} />
               <YAxis />
               <Tooltip />
-              <Bar dataKey='value' fill='#fac800' />
+              <Bar dataKey='value' fill='#767171' />
             </BarChart>
           </ResponsiveContainer>
         </div>

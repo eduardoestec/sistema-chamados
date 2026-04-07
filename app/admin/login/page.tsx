@@ -31,19 +31,19 @@ export default function LoginPage() {
         <div className='mb-4'>
           <label className='block text-sm font-semibold text-gray-700 mb-1'>Email</label>
           <input type='email' value={email} onChange={e => setEmail(e.target.value)}
-            className='w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-yellow-400'
+            className='w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#767171]'
             placeholder='seu@email.com' />
         </div>
         <div className='mb-6'>
           <label className='block text-sm font-semibold text-gray-700 mb-1'>Senha</label>
           <input type='password' value={senha} onChange={e => setSenha(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && entrar()}
-            className='w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-yellow-400'
+            className='w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#767171]'
             placeholder='••••••••' />
         </div>
         {erro && <p className='text-red-500 text-sm mb-4'>{erro}</p>}
         <button onClick={entrar} disabled={entrando}
-          className='w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 rounded-xl transition disabled:opacity-50'>
+          className='w-full bg-[#767171] hover:bg-[#5a5555] text-white font-bold py-3 rounded-xl transition disabled:opacity-50'>
           {entrando ? 'Entrando...' : 'Entrar'}
         </button>
       </div>

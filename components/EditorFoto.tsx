@@ -141,7 +141,7 @@ export default function EditorFoto({ onSalvar, onCancelar, imagemInicial }: Prop
         <div className='flex gap-2 p-3 border-b border-gray-100 flex-wrap'>
           {ferramentas.map(f => (
             <button key={f.id} onClick={() => setFerramenta(f.id as Ferramenta)}
-              className={ferramenta === f.id ? 'px-3 py-1 rounded-lg text-sm font-medium bg-yellow-400 text-gray-900' : 'px-3 py-1 rounded-lg text-sm font-medium bg-gray-100 text-gray-600'}>
+              className={ferramenta === f.id ? 'px-3 py-1 rounded-lg text-sm font-medium bg-[#767171] text-white' : 'px-3 py-1 rounded-lg text-sm font-medium bg-gray-100 text-gray-600'}>
               {f.label}
             </button>
           ))}
@@ -156,7 +156,7 @@ export default function EditorFoto({ onSalvar, onCancelar, imagemInicial }: Prop
           <div className='flex gap-2 p-3 border-b border-gray-100'>
             <input className='flex-1 border border-gray-200 rounded-lg px-3 py-1 text-sm' placeholder='Digite o texto...'
               value={texto} onChange={e => setTexto(e.target.value)} onKeyDown={e => e.key === 'Enter' && adicionarTexto()} autoFocus />
-            <button onClick={adicionarTexto} className='bg-yellow-400 text-gray-900 font-bold px-4 rounded-lg text-sm'>OK</button>
+            <button onClick={adicionarTexto} className='bg-[#767171] text-white font-bold px-4 rounded-lg text-sm'>OK</button>
           </div>
         )}
         <div className='p-4 overflow-auto flex-1'>
@@ -167,7 +167,7 @@ export default function EditorFoto({ onSalvar, onCancelar, imagemInicial }: Prop
         </div>
         <div className='flex gap-2 p-4 border-t border-gray-100'>
           <button onClick={onCancelar} className='flex-1 border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl'>Cancelar</button>
-          <button onClick={salvar} className='flex-1 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 rounded-xl'>Salvar Foto</button>
+          <button onClick={salvar} className='flex-1 bg-[#767171] hover:bg-[#5a5555] text-white font-bold py-3 rounded-xl'>Salvar Foto</button>
         </div>
       </div>
     </div>

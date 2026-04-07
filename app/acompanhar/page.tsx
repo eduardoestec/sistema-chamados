@@ -1,10 +1,13 @@
 'use client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { ArrowLeft } from 'lucide-react'
 
 const statusLabel: Record<string, string> = { enviado: 'Enviado', recebido: 'Recebido', em_analise: 'Em Analise', em_andamento: 'Em Andamento', resolvido: 'Resolvido' }
 const statusOrdem = ['enviado', 'recebido', 'em_analise', 'em_andamento', 'resolvido']
 
 export default function AcompanharPage() {
+  const router = useRouter()
   const [codigo, setCodigo] = useState('')
   const [chamado, setChamado] = useState<any>(null)
   const [historico, setHistorico] = useState<any[]>([])
@@ -26,19 +29,22 @@ export default function AcompanharPage() {
   }
 
   return (
-    <main className='min-h-screen p-6 max-w-lg mx-auto'>
+    <main className='min-h-screen p-4 sm:p-6 max-w-lg mx-auto'>
+      <button onClick={() => router.back()} className='flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-4'>
+        <ArrowLeft size={16} /> Voltar
+      </button>
       <h1 className='text-2xl font-bold text-gray-800 mb-1'>Acompanhar Chamado</h1>
       <p className='text-sm text-gray-500 mb-6'>Digite o codigo recebido ao abrir o chamado</p>
       <div className='flex gap-2 mb-6'>
         <input
-          className='flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-yellow-400'
+          className='flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#767171]'
           placeholder='Ex: MAT-1234'
           value={codigo}
           onChange={e => setCodigo(e.target.value.toUpperCase())}
           onKeyDown={e => e.key === 'Enter' && buscar()}
         />
         <button onClick={buscar} disabled={buscando}
-          className='bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-6 rounded-xl transition disabled:opacity-50'>
+          className='bg-[#767171] hover:bg-[#5a5555] text-white font-bold px-6 rounded-xl transition disabled:opacity-50'>
           {buscando ? '...' : 'Buscar'}
         </button>
       </div>
@@ -59,7 +65,7 @@ export default function AcompanharPage() {
               const item = historico.find(h => h.status_novo === s)
               const ativo = item != null
               const atual = chamado.status === s
-              const circulo = atual ? 'bg-yellow-400' : ativo ? 'bg-green-400' : 'bg-gray-200'
+              const circulo = atual ? 'bg-[#767171]' : ativo ? 'bg-green-400' : 'bg-gray-200'
               const texto = ativo ? 'text-gray-800' : 'text-gray-400'
               return (
                 <div key={s} className='flex items-start gap-3'>
@@ -74,7 +80,7 @@ export default function AcompanharPage() {
             })}
           </div>
           {chamado.previsao_resolucao && (
-            <div className='mt-5 bg-yellow-50 rounded-xl p-3'>
+            <div className='mt-5 bg-gray-50 rounded-xl p-3'>
               <p className='text-xs text-gray-500'>Previsao de resolucao</p>
               <p className='text-sm font-semibold text-gray-800'>{new Date(chamado.previsao_resolucao).toLocaleString('pt-BR')}</p>
             </div>
