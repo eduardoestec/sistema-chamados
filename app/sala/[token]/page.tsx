@@ -35,7 +35,7 @@ export default async function SalaPage({ params }: Props) {
 
           <div className='mb-auto'>
             <p className='text-xs text-gray-400 uppercase tracking-wide mb-1'>Sistema de Chamados</p>
-            <h1 className='text-xl font-bold text-gray-800 mb-4'>Manutencao Predial</h1>
+            <h1 className='text-xl font-bold text-gray-800 mb-4'>Manutenção</h1>
             <div className='flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3'>
               <div className='w-2 h-2 rounded-full bg-[#767171]'></div>
               <div>
@@ -52,7 +52,7 @@ export default async function SalaPage({ params }: Props) {
             >
               Novo Chamado
             </Link>
-            <p className='text-xs text-gray-400 text-center mt-4'>Nenhum dado pessoal e armazenado</p>
+            <p className='text-xs text-gray-400 text-center mt-4'>Nenhum dado pessoal é armazenado</p>
           </div>
 
         </div>
