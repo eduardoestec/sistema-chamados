@@ -24,7 +24,8 @@ const urgenciaIcons: Record<string, React.ReactNode> = {
 export default function FormularioChamado() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const sala = searchParams.get('sala') || 'desconhecida'
+  const salaId = searchParams.get('sala_id') || null
+  const sala = searchParams.get('sala_nome') || searchParams.get('sala') || 'desconhecida'
   const [tipo, setTipo] = useState('')
   const [descricao, setDescricao] = useState('')
   const [urgencia, setUrgencia] = useState('')
@@ -55,7 +56,7 @@ export default function FormularioChamado() {
       const res = await fetch('/api/chamados', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sala, tipo_problema: tipo, descricao, urgencia, foto: fotoEditada || fotoPreview || null })
+        body: JSON.stringify({ sala_id: salaId, sala_nome: sala, tipo_problema: tipo, descricao, urgencia, foto: fotoEditada || fotoPreview || null })
       })
       const data = await res.json()
       if (data.codigo_unico) {

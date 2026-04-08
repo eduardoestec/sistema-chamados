@@ -18,8 +18,27 @@ export default function LoginPage() {
   async function entrar() {
     setEntrando(true)
     setErro('')
-    const { error } = await supabase.auth.signInWithPassword({ email, password: senha })
+    const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password: senha })
     if (error) { setErro('Email ou senha incorretos'); setEntrando(false); return }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('nivel, nome')
+      .eq('id', authData.user.id)
+      .single()
+
+    console.log('[login] user id:', authData.user.id)
+    console.log('[login] profile:', profile)
+    console.log('[login] profileError:', profileError)
+
+    if (profile) {
+      localStorage.setItem('admin_nivel', profile.nivel)
+      localStorage.setItem('admin_nome', profile.nome)
+    } else {
+      // Fallback: salva gestor se não conseguir buscar o perfil
+      localStorage.setItem('admin_nivel', 'gestor')
+      localStorage.setItem('admin_nome', authData.user.email || '')
+    }
     router.push('/admin')
   }
 

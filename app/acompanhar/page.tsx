@@ -38,7 +38,7 @@ export default function AcompanharPage() {
       <div className='flex gap-2 mb-6'>
         <input
           className='flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#767171]'
-          placeholder='Ex: MAT-1234'
+          placeholder='Ex: AS-0001'
           value={codigo}
           onChange={e => setCodigo(e.target.value.toUpperCase())}
           onKeyDown={e => e.key === 'Enter' && buscar()}

@@ -6,21 +6,33 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 )
 
-function gerarCodigo() {
-  const num = Math.floor(Math.random() * 9000) + 1000
-  return 'MAT-' + num
+async function gerarCodigo(supabase: ReturnType<typeof createClient>): Promise<string> {
+  const { data } = await supabase
+    .from('chamados')
+    .select('codigo_unico')
+    .like('codigo_unico', 'AS-%')
+    .order('criado_em', { ascending: false })
+    .limit(1)
+    .single()
+
+  let proximo = 1
+  if (data?.codigo_unico) {
+    const num = parseInt(data.codigo_unico.replace('AS-', ''), 10)
+    if (!isNaN(num)) proximo = num + 1
+  }
+  return 'AS-' + String(proximo).padStart(4, '0')
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { sala, tipo_problema, descricao, urgencia, foto } = body
+    const { sala_id, tipo_problema, descricao, urgencia, foto } = body
 
     if (!tipo_problema || !descricao || !urgencia) {
       return NextResponse.json({ erro: 'Campos obrigatorios faltando' }, { status: 400 })
     }
 
-    const codigo_unico = gerarCodigo()
+    const codigo_unico = await gerarCodigo(supabase)
 
     const { data, error } = await supabase
       .from('chamados')
@@ -30,7 +42,7 @@ export async function POST(req: NextRequest) {
         descricao,
         urgencia,
         status: 'enviado',
-        sala_id: null
+        sala_id: sala_id || null
       })
       .select()
       .single()

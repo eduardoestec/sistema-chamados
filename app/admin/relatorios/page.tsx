@@ -1,12 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
 const CORES = ['#767171', '#05df72', '#fb2c36', '#6a7282', '#364153', '#fefce8', '#e5e7eb']
@@ -17,6 +17,7 @@ export default function RelatoriosPage() {
   const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
+    if (localStorage.getItem('admin_nivel') !== 'gestor') { router.push('/admin'); return }
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) { router.push('/admin/login'); return }
       carregarDados()

@@ -1,13 +1,13 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
-import { QrCode, BarChart2, LogOut, Wrench, DoorOpen } from 'lucide-react'
+import { QrCode, BarChart2, LogOut, Wrench, Users } from 'lucide-react'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
 const statusLabel = { enviado: 'Enviado', recebido: 'Recebido', em_analise: 'Em Analise', em_andamento: 'Em Andamento', resolvido: 'Resolvido' }
@@ -16,12 +16,14 @@ const urgenciaLabel = { baixa: 'Baixa', media: 'Media', alta: 'Alta', muito_alta
 
 export default function AdminPage() {
   const router = useRouter()
-  const [chamados, setChamados] = useState([])
+  const [chamados, setChamados] = useState<any[]>([])
   const [filtroStatus, setFiltroStatus] = useState('')
   const [filtroUrgencia, setFiltroUrgencia] = useState('')
   const [carregando, setCarregando] = useState(true)
+  const [nivel, setNivel] = useState('')
 
   useEffect(() => {
+    setNivel(localStorage.getItem('admin_nivel') || '')
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) { router.push('/admin/login'); return }
       carregarChamados()
@@ -30,8 +32,25 @@ export default function AdminPage() {
 
   async function carregarChamados() {
     setCarregando(true)
-    const { data } = await supabase.from('chamados').select('*').order('criado_em', { ascending: false })
-    setChamados(data || [])
+    const { data: lista } = await supabase
+      .from('chamados')
+      .select('*')
+      .order('criado_em', { ascending: false })
+
+    if (!lista) { setChamados([]); setCarregando(false); return }
+
+    // Buscar nomes dos responsáveis separadamente para não filtrar chamados sem responsavel_id
+    const ids = [...new Set(lista.map(c => c.responsavel_id).filter(Boolean))]
+    let nomes: Record<string, string> = {}
+    if (ids.length > 0) {
+      const { data: perfis } = await supabase
+        .from('profiles')
+        .select('id, nome')
+        .in('id', ids)
+      for (const p of perfis || []) nomes[p.id] = p.nome
+    }
+
+    setChamados(lista.map(c => ({ ...c, responsavel_nome: nomes[c.responsavel_id] || null })))
     setCarregando(false)
   }
 
@@ -51,10 +70,10 @@ export default function AdminPage() {
   const muitoAlta = chamados.filter(c => c.urgencia === 'muito_alta' && c.status !== 'resolvido').length
 
   return (
-    <main className='min-h-screen bg-gray-50 flex'>
+    <main className='bg-gray-50 flex'>
 
       {/* Sidebar */}
-      <aside className='w-20 bg-gray-900 flex flex-col items-center justify-between py-6 flex-shrink-0'>
+      <aside className='fixed left-0 top-0 z-10 w-20 h-screen bg-gray-900 flex flex-col items-center justify-between py-6 flex-shrink-0'>
         <div className='flex flex-col items-center gap-1'>
           <div className='bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center'>
             <Wrench size={22} className='text-white' />
@@ -62,24 +81,28 @@ export default function AdminPage() {
           <span className='text-white text-xs font-bold mt-1'>A.S</span>
         </div>
         <div className='flex flex-col items-center gap-6'>
-          <Link href='/admin/salas' className='flex flex-col items-center gap-1 group'>
-            <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition'>
-              <DoorOpen size={20} className='text-white transition' />
-            </div>
-            <span className='text-gray-400 text-xs group-hover:text-[#767171] transition text-center leading-tight'>Salas</span>
-          </Link>
-          <Link href='/admin/qrcodes' className='flex flex-col items-center gap-1 group'>
-            <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition'>
-              <QrCode size={20} className='text-white transition' />
-            </div>
-            <span className='text-gray-400 text-xs group-hover:text-[#767171] transition text-center leading-tight'>QR Codes</span>
-          </Link>
-          <Link href='/admin/relatorios' className='flex flex-col items-center gap-1 group'>
-            <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition'>
-              <BarChart2 size={20} className='text-white transition' />
-            </div>
-            <span className='text-gray-400 text-xs group-hover:text-[#767171] transition text-center leading-tight'>Relatorios</span>
-          </Link>
+          {nivel === 'gestor' && (
+            <>
+              <Link href='/admin/usuarios' className='flex flex-col items-center gap-1 group'>
+                <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition'>
+                  <Users size={20} className='text-white transition' />
+                </div>
+                <span className='text-gray-400 text-xs group-hover:text-[#767171] transition text-center leading-tight'>Usuarios</span>
+              </Link>
+              <Link href='/admin/qrcodes' className='flex flex-col items-center gap-1 group'>
+                <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition'>
+                  <QrCode size={20} className='text-white transition' />
+                </div>
+                <span className='text-gray-400 text-xs group-hover:text-[#767171] transition text-center leading-tight'>QR Codes</span>
+              </Link>
+              <Link href='/admin/relatorios' className='flex flex-col items-center gap-1 group'>
+                <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition'>
+                  <BarChart2 size={20} className='text-white transition' />
+                </div>
+                <span className='text-gray-400 text-xs group-hover:text-[#767171] transition text-center leading-tight'>Relatorios</span>
+              </Link>
+            </>
+          )}
           <button onClick={sair} className='flex flex-col items-center gap-1 group'>
             <div className='bg-gray-700 group-hover:bg-red-500 rounded-xl w-12 h-12 flex items-center justify-center transition'>
               <LogOut size={20} className='text-white transition' />
@@ -90,65 +113,74 @@ export default function AdminPage() {
       </aside>
 
       {/* Conteudo principal */}
-      <div className='flex-1 p-4 sm:p-6 overflow-auto'>
+      <div className='ml-20 flex-1 h-screen flex flex-col'>
 
-        {/* Header */}
-        <div className='mb-6'>
-          <h1 className='text-2xl font-bold text-gray-800'>Painel de Chamados</h1>
-          <p className='text-sm text-gray-500'>Manutencao Predial</p>
+        {/* Header fixo */}
+        <div className='flex-shrink-0 p-4 sm:p-6 pb-0'>
+          <div className='mb-6'>
+            <h1 className='text-2xl font-bold text-gray-800'>Painel de Chamados</h1>
+            <p className='text-sm text-gray-500'>Manutencao Predial</p>
+          </div>
+
+          {/* Cards de resumo */}
+          <div className='grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6'>
+            <div className='bg-white rounded-2xl shadow p-5'>
+              <p className='text-xs text-gray-400 mb-1'>Total de Chamados</p>
+              <p className='text-3xl font-black text-gray-800'>{chamados.length}</p>
+            </div>
+            <div className='bg-white rounded-2xl shadow p-5'>
+              <p className='text-xs text-gray-400 mb-1'>Em Aberto</p>
+              <p className='text-3xl font-black text-[#767171]'>{emAberto}</p>
+            </div>
+            <div className='bg-white rounded-2xl shadow p-5'>
+              <p className='text-xs text-gray-400 mb-1'>Urgencia Muito Alta</p>
+              <p className='text-3xl font-black text-red-500'>{muitoAlta}</p>
+            </div>
+          </div>
+
+          {/* Filtros */}
+          <div className='flex gap-2 mb-4 flex-wrap'>
+            <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}
+              className='border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none bg-white'>
+              <option value=''>Todos os status</option>
+              {Object.entries(statusLabel).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+            <select value={filtroUrgencia} onChange={e => setFiltroUrgencia(e.target.value)}
+              className='border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none bg-white'>
+              <option value=''>Todas as urgencias</option>
+              {Object.entries(urgenciaLabel).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+            <span className='text-sm text-gray-400 self-center ml-2'>{filtrados.length} chamados</span>
+          </div>
         </div>
 
-        {/* Cards de resumo */}
-        <div className='grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6'>
-          <div className='bg-white rounded-2xl shadow p-5'>
-            <p className='text-xs text-gray-400 mb-1'>Total de Chamados</p>
-            <p className='text-3xl font-black text-gray-800'>{chamados.length}</p>
+        {/* Lista de chamados com scroll */}
+        <div className='flex-1 overflow-y-auto px-4 sm:px-6 pb-6'>
+          {carregando && <p className='text-gray-400 text-sm'>Carregando...</p>}
+          <div className='flex flex-col gap-3'>
+            {filtrados.map(c => (
+              <Link key={c.id} href={'/admin/chamado/' + c.id}
+                className='bg-white rounded-2xl shadow p-4 hover:shadow-md transition block'>
+                <div className='flex justify-between items-start mb-2'>
+                  <span className='font-bold text-gray-800'>{c.codigo_unico}</span>
+                  <span className={urgenciaCor[c.urgencia] + ' text-xs px-2 py-1 rounded-full font-medium'}>
+                    {urgenciaLabel[c.urgencia]}
+                  </span>
+                </div>
+                <p className='text-sm text-gray-600 mb-1'>{c.tipo_problema}</p>
+                <p className='text-xs text-gray-400 truncate mb-3'>{c.descricao}</p>
+                <div className='flex justify-between items-center'>
+                  <span className='text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full'>{statusLabel[c.status]}</span>
+                  <div className='flex items-center gap-2'>
+                    <span className={`text-xs font-medium ${c.responsavel_nome ? 'text-[#767171]' : 'text-gray-400'}`}>
+                      {c.responsavel_nome || 'Sem responsavel'}
+                    </span>
+                    <span className='text-xs text-gray-400'>{new Date(c.criado_em).toLocaleDateString('pt-BR')}</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
           </div>
-          <div className='bg-white rounded-2xl shadow p-5'>
-            <p className='text-xs text-gray-400 mb-1'>Em Aberto</p>
-            <p className='text-3xl font-black text-[#767171]'>{emAberto}</p>
-          </div>
-          <div className='bg-white rounded-2xl shadow p-5'>
-            <p className='text-xs text-gray-400 mb-1'>Urgencia Muito Alta</p>
-            <p className='text-3xl font-black text-red-500'>{muitoAlta}</p>
-          </div>
-        </div>
-
-        {/* Filtros */}
-        <div className='flex gap-2 mb-4 flex-wrap'>
-          <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}
-            className='border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none bg-white'>
-            <option value=''>Todos os status</option>
-            {Object.entries(statusLabel).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-          </select>
-          <select value={filtroUrgencia} onChange={e => setFiltroUrgencia(e.target.value)}
-            className='border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none bg-white'>
-            <option value=''>Todas as urgencias</option>
-            {Object.entries(urgenciaLabel).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-          </select>
-          <span className='text-sm text-gray-400 self-center ml-2'>{filtrados.length} chamados</span>
-        </div>
-
-        {/* Lista de chamados */}
-        {carregando && <p className='text-gray-400 text-sm'>Carregando...</p>}
-        <div className='flex flex-col gap-3'>
-          {filtrados.map(c => (
-            <Link key={c.id} href={'/admin/chamado/' + c.id}
-              className='bg-white rounded-2xl shadow p-4 hover:shadow-md transition block'>
-              <div className='flex justify-between items-start mb-2'>
-                <span className='font-bold text-gray-800'>{c.codigo_unico}</span>
-                <span className={urgenciaCor[c.urgencia] + ' text-xs px-2 py-1 rounded-full font-medium'}>
-                  {urgenciaLabel[c.urgencia]}
-                </span>
-              </div>
-              <p className='text-sm text-gray-600 mb-1'>{c.tipo_problema}</p>
-              <p className='text-xs text-gray-400 truncate mb-3'>{c.descricao}</p>
-              <div className='flex justify-between items-center'>
-                <span className='text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full'>{statusLabel[c.status]}</span>
-                <span className='text-xs text-gray-400'>{new Date(c.criado_em).toLocaleDateString('pt-BR')}</span>
-              </div>
-            </Link>
-          ))}
         </div>
       </div>
     </main>

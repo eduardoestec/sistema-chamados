@@ -1,5 +1,14 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Wrench, Search } from 'lucide-react'
+import { createClient } from '@supabase/supabase-js'
+
+export const dynamic = 'force-dynamic'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 interface Props {
   params: Promise<{ token: string }>
@@ -7,7 +16,12 @@ interface Props {
 
 export default async function SalaPage({ params }: Props) {
   const { token } = await params
-  const sala = token.replace(/-/g, ' ')
+
+  const { data: sala } = await supabase
+    .from('salas')
+    .select('*')
+    .eq('qrcode_token', token)
+    .single()
 
   return (
     <main className='min-h-screen flex bg-gray-50'>
@@ -18,7 +32,7 @@ export default async function SalaPage({ params }: Props) {
           <div className='bg-[#767171] group-hover:bg-[#5a5555] rounded-xl w-12 h-12 flex items-center justify-center transition'>
             <Wrench size={24} className='text-white' />
           </div>
-          <span className='text-white text-xs font-bold mt-1'>A.S</span>
+          <span className='text-white text-xs font-bold mt-1'>Admin</span>
         </Link>
 
         <Link href='/acompanhar' className='flex flex-col items-center gap-1 group'>
@@ -36,22 +50,48 @@ export default async function SalaPage({ params }: Props) {
           <div className='mb-auto'>
             <p className='text-xs text-gray-400 uppercase tracking-wide mb-1'>Sistema de Chamados</p>
             <h1 className='text-xl font-bold text-gray-800 mb-4'>Manutenção</h1>
-            <div className='flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3'>
-              <div className='w-2 h-2 rounded-full bg-[#767171]'></div>
-              <div>
-                <p className='text-xs text-gray-400'>Localizacao detectada</p>
-                <p className='text-sm font-semibold text-gray-700 capitalize'>{sala}</p>
+
+            {sala ? (
+              <div className='flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3'>
+                <div className='w-2 h-2 rounded-full bg-[#767171]'></div>
+                <div>
+                  <p className='text-xs text-gray-400'>Localizacao detectada</p>
+                  <p className='text-sm font-semibold text-gray-700'>{sala.nome}</p>
+                  {sala.localizacao && (
+                    <p className='text-xs text-gray-400 mt-0.5'>{sala.localizacao}</p>
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className='flex items-center gap-2 bg-red-50 rounded-xl px-4 py-3'>
+                <div className='w-2 h-2 rounded-full bg-red-400'></div>
+                <p className='text-sm text-red-500'>Sala não encontrada. QR Code inválido.</p>
+              </div>
+            )}
           </div>
 
           <div className='mt-8'>
-            <Link
-              href={'/novo-chamado?sala=' + token}
-              className='block w-full bg-[#767171] hover:bg-[#5a5555] text-white font-bold py-4 rounded-2xl text-center text-base transition'
-            >
-              Novo Chamado
-            </Link>
+            <div className='flex justify-center mb-6'>
+              <Image
+                src='/AS - 350x350.png'
+                alt='Logo'
+                width={120}
+                height={120}
+              />
+            </div>
+
+            {sala ? (
+              <Link
+                href={'/novo-chamado?sala_id=' + sala.id + '&sala_nome=' + encodeURIComponent(sala.nome)}
+                className='block w-full bg-[#767171] hover:bg-[#5a5555] text-white font-bold py-4 rounded-2xl text-center text-base transition'
+              >
+                Novo Chamado
+              </Link>
+            ) : (
+              <button disabled className='block w-full bg-gray-300 text-gray-500 font-bold py-4 rounded-2xl text-center text-base cursor-not-allowed'>
+                Novo Chamado
+              </button>
+            )}
             <p className='text-xs text-gray-400 text-center mt-4'>Nenhum dado pessoal é armazenado</p>
           </div>
 

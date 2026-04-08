@@ -1,12 +1,13 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 import EditorFoto from '@/components/EditorFoto'
+import { UserCheck } from 'lucide-react'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
 const statusLabel: Record<string, string> = { enviado: 'Enviado', recebido: 'Recebido', em_analise: 'Em Analise', em_andamento: 'Em Andamento', resolvido: 'Resolvido' }
@@ -23,27 +24,94 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
   const [salvando, setSalvando] = useState(false)
   const [adminId, setAdminId] = useState<string | null>(null)
   const [adminNome, setAdminNome] = useState('')
+  const [salaNome, setSalaNome] = useState<string | null>(null)
+  const [responsavelNome, setResponsavelNome] = useState<string | null>(null)
   const [fotoPreview, setFotoPreview] = useState('')
   const [fotoEditada, setFotoEditada] = useState('')
   const [abrirEditor, setAbrirEditor] = useState(false)
+  const [chamadoId, setChamadoId] = useState<string>('')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) { router.push('/admin/login'); return }
-      setAdminId(data.session.user.id)
-      setAdminNome(data.session.user.email || 'Tecnico')
-      params.then(p => carregarChamado(p.id))
+      const uid = data.session.user.id
+      const nome = localStorage.getItem('admin_nome') || data.session.user.email || 'Tecnico'
+      setAdminId(uid)
+      setAdminNome(nome)
+      params.then(p => {
+        setChamadoId(p.id)
+        carregarChamado(p.id, uid, nome)
+      })
     })
   }, [])
 
-  async function carregarChamado(id: string) {
-    const { data: c } = await supabase.from('chamados').select('*').eq('id', id).single()
+  async function carregarChamado(id: string, uid: string, nome: string) {
+    const { data: c } = await supabase.from('chamados').select('*, salas(nome)').eq('id', id).single()
     const { data: h } = await supabase.from('chamado_historico').select('*').eq('chamado_id', id).order('criado_em', { ascending: true })
     const { data: a } = await supabase.from('anexos').select('*').eq('chamado_id', id).order('criado_em', { ascending: true })
     setChamado(c)
+    setSalaNome(c?.salas?.nome || null)
     setHistorico(h || [])
     setAnexos(a || [])
     setNovoStatus(c.status)
+
+    // Buscar nome do responsável atual
+    if (c?.responsavel_id) {
+      const { data: perfil } = await supabase
+        .from('profiles')
+        .select('nome')
+        .eq('id', c.responsavel_id)
+        .single()
+      setResponsavelNome(perfil?.nome || null)
+    } else {
+      setResponsavelNome(null)
+    }
+
+    // Auto-atribuição: se status for 'enviado', muda para 'recebido' e atribui ao técnico
+    if (c?.status === 'enviado') {
+      await supabase.from('chamados').update({
+        status: 'recebido',
+        responsavel_id: uid,
+        atualizado_em: new Date().toISOString()
+      }).eq('id', id)
+      await supabase.from('chamado_historico').insert({
+        chamado_id: id,
+        status_anterior: 'enviado',
+        status_novo: 'recebido',
+        observacao: 'Chamado recebido por ' + nome,
+        admin_id: uid
+      })
+      setChamado((prev: any) => ({ ...prev, status: 'recebido', responsavel_id: uid }))
+      setNovoStatus('recebido')
+      setResponsavelNome(nome)
+    }
+  }
+
+  async function pegarChamado() {
+    console.log('[pegarChamado] adminId:', adminId)
+    console.log('[pegarChamado] chamadoId:', chamadoId)
+    console.log('[pegarChamado] chamado.id:', chamado?.id)
+    if (!adminId || !chamadoId) {
+      console.warn('[pegarChamado] abortado: adminId ou chamadoId ausente')
+      return
+    }
+    const { data, error } = await supabase
+      .from('chamados')
+      .update({ responsavel_id: adminId, atualizado_em: new Date().toISOString() })
+      .eq('id', chamadoId)
+      .select()
+    console.log('[pegarChamado] update resultado:', data, 'erro:', error)
+    if (error) { alert('Erro ao pegar chamado: ' + error.message); return }
+    const { error: histError } = await supabase.from('chamado_historico').insert({
+      chamado_id: chamadoId,
+      status_anterior: chamado.status,
+      status_novo: chamado.status,
+      observacao: 'Chamado assumido por ' + adminNome,
+      admin_id: adminId
+    })
+    console.log('[pegarChamado] historico erro:', histError)
+    setChamado((prev: any) => ({ ...prev, responsavel_id: adminId }))
+    setResponsavelNome(adminNome)
   }
 
   function selecionarFoto(e: React.ChangeEvent<HTMLInputElement>) {
@@ -85,12 +153,14 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
     setObservacao('')
     setFotoPreview('')
     setFotoEditada('')
-    await params.then(p => carregarChamado(p.id))
+    await carregarChamado(chamado.id, adminId!, adminNome)
     setSalvando(false)
     alert('Atualizado com sucesso!')
   }
 
   if (!chamado) return <div className='flex items-center justify-center min-h-screen'>Carregando...</div>
+
+  const isResponsavel = chamado.responsavel_id === adminId
 
   return (
     <main className='min-h-screen p-4 sm:p-6 max-w-lg mx-auto'>
@@ -102,8 +172,26 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
           <span className='text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full'>{urgenciaLabel[chamado.urgencia]}</span>
         </div>
         <p className='text-sm font-semibold text-gray-700 mb-1'>{chamado.tipo_problema}</p>
+        {salaNome && <p className='text-xs text-gray-500 mb-1'>Sala: {salaNome}</p>}
         <p className='text-sm text-gray-500 mb-4'>{chamado.descricao}</p>
-        <p className='text-xs text-gray-400'>Aberto em: {new Date(chamado.criado_em).toLocaleString('pt-BR')}</p>
+
+        {/* Responsável */}
+        <div className='flex items-center justify-between'>
+          <p className='text-xs text-gray-400'>
+            Aberto em: {new Date(chamado.criado_em).toLocaleString('pt-BR')}
+          </p>
+        </div>
+        <div className='mt-3 flex items-center justify-between'>
+          <p className='text-xs text-gray-500'>
+            Responsavel: <span className='font-medium text-gray-700'>{responsavelNome || 'Nao atribuido'}</span>
+          </p>
+          {!isResponsavel && (
+            <button onClick={pegarChamado}
+              className='flex items-center gap-1 text-xs bg-[#767171] hover:bg-[#5a5555] text-white font-bold px-3 py-1.5 rounded-lg transition'>
+              <UserCheck size={13} /> Pegar Chamado
+            </button>
+          )}
+        </div>
       </div>
 
       {anexos.filter(a => a.tipo === 'usuario').length > 0 && (
