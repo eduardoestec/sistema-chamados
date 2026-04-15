@@ -13,7 +13,7 @@ const CORES = ['#767171', '#05df72', '#fb2c36', '#6a7282', '#364153', '#fefce8',
 
 export default function RelatoriosPage() {
   const router = useRouter()
-  const [chamados, setChamados] = useState([])
+  const [chamados, setChamados] = useState<any[]>([])
   const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
@@ -30,10 +30,11 @@ export default function RelatoriosPage() {
     setCarregando(false)
   }
 
-  function agrupar(campo) {
-    const mapa = {}
+  function agrupar(campo: string) {
+    const mapa: Record<string, number> = {}
     chamados.forEach(c => {
-      mapa[c[campo]] = (mapa[c[campo]] || 0) + 1
+      const key = c[campo as keyof typeof c] as string
+      mapa[key] = (mapa[key] || 0) + 1
     })
     return Object.entries(mapa).map(([name, value]) => ({ name, value }))
   }

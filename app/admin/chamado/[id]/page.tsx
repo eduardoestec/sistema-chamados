@@ -140,6 +140,15 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
       admin_id: adminId
     })
 
+    // Se status mudou para resolvido, notificar gestores
+    if (novoStatus === 'resolvido' && statusAnterior !== 'resolvido') {
+      await supabase.from('notificacoes').insert({
+        titulo: 'Chamado Resolvido',
+        mensagem: `O chamado ${chamado.codigo_unico} foi resolvido por ${adminNome}`,
+        destinatario_nivel: 'gestor'
+      })
+    }
+
     const fotoFinal = fotoEditada || fotoPreview
     if (fotoFinal) {
       await supabase.from('anexos').insert({
@@ -158,120 +167,213 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
     alert('Atualizado com sucesso!')
   }
 
-  if (!chamado) return <div className='flex items-center justify-center min-h-screen'>Carregando...</div>
+  if (!chamado) return (
+    <div className='flex items-center justify-center min-h-screen bg-[#f8f7f7]'>
+      <div className='text-center'>
+        <div className='bg-[#767171] rounded-xl w-16 h-16 flex items-center justify-center mx-auto mb-4'>
+          <span className='text-white font-black text-xl'>AS</span>
+        </div>
+        <p className='text-[#6b7280]'>Carregando...</p>
+      </div>
+    </div>
+  )
 
   const isResponsavel = chamado.responsavel_id === adminId
 
   return (
-    <main className='min-h-screen p-4 sm:p-6 max-w-lg mx-auto'>
-      <button onClick={() => router.push('/admin')} className='text-sm text-gray-500 hover:text-gray-800 mb-4 block'>Voltar</button>
-
-      <div className='bg-white rounded-2xl shadow p-5 mb-4'>
-        <div className='flex justify-between items-center mb-4'>
-          <span className='font-bold text-gray-800 text-lg'>{chamado.codigo_unico}</span>
-          <span className='text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full'>{urgenciaLabel[chamado.urgencia]}</span>
-        </div>
-        <p className='text-sm font-semibold text-gray-700 mb-1'>{chamado.tipo_problema}</p>
-        {salaNome && <p className='text-xs text-gray-500 mb-1'>Sala: {salaNome}</p>}
-        <p className='text-sm text-gray-500 mb-4'>{chamado.descricao}</p>
-
-        {/* Responsável */}
-        <div className='flex items-center justify-between'>
-          <p className='text-xs text-gray-400'>
-            Aberto em: {new Date(chamado.criado_em).toLocaleString('pt-BR')}
-          </p>
-        </div>
-        <div className='mt-3 flex items-center justify-between'>
-          <p className='text-xs text-gray-500'>
-            Responsavel: <span className='font-medium text-gray-700'>{responsavelNome || 'Nao atribuido'}</span>
-          </p>
-          {!isResponsavel && (
-            <button onClick={pegarChamado}
-              className='flex items-center gap-1 text-xs bg-[#767171] hover:bg-[#5a5555] text-white font-bold px-3 py-1.5 rounded-lg transition'>
-              <UserCheck size={13} /> Pegar Chamado
-            </button>
-          )}
-        </div>
-      </div>
-
-      {anexos.filter(a => a.tipo === 'usuario').length > 0 && (
-        <div className='bg-white rounded-2xl shadow p-5 mb-4'>
-          <p className='text-sm font-semibold text-gray-700 mb-3'>Fotos do Usuario</p>
-          <div className='flex flex-col gap-2'>
-            {anexos.filter(a => a.tipo === 'usuario').map(a => (
-              <img key={a.id} src={a.url} alt='Foto usuario' className='w-full rounded-xl object-cover max-h-48' />
-            ))}
+    <main className='min-h-screen bg-[#f8f7f7]'>
+      <div className='max-w-7xl mx-auto p-6'>
+        {/* Header */}
+        <div className='flex items-center justify-between mb-8'>
+          <button onClick={() => router.push('/admin')} className='flex items-center gap-2 text-[#6b7280] hover:text-[#1a1a1a] transition-all duration-200'>
+            <span className='text-sm font-medium'>← Voltar ao painel</span>
+          </button>
+          <div className='bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center'>
+            <span className='text-white font-black text-lg'>AS</span>
           </div>
         </div>
-      )}
 
-      <div className='bg-white rounded-2xl shadow p-5 mb-4'>
-        <p className='text-sm font-semibold text-gray-700 mb-3'>Atualizar Status</p>
-        <div className='grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4'>
-          {statusOrdem.map(s => (
-            <button key={s} onClick={() => setNovoStatus(s)}
-              className={novoStatus === s ? 'py-2 px-3 rounded-lg border text-sm font-medium bg-[#767171] border-[#767171] text-white' : 'py-2 px-3 rounded-lg border text-sm font-medium bg-white border-gray-200 text-gray-600'}>
-              {statusLabel[s]}
-            </button>
-          ))}
-        </div>
-        <textarea className='w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 min-h-20 focus:outline-none focus:border-[#767171] mb-3'
-          placeholder='Observacao (opcional)...' value={observacao} onChange={e => setObservacao(e.target.value)} />
-        <div className='mb-3'>
-          <label className='block text-sm font-semibold text-gray-700 mb-2'>Adicionar Foto</label>
-          <input type='file' accept='image/*' onChange={selecionarFoto} className='w-full border border-gray-200 rounded-lg p-2 text-sm text-gray-600' />
-          {(fotoEditada || fotoPreview) && (
-            <div className='relative mt-2'>
-              <img src={fotoEditada || fotoPreview} alt='Preview' className='w-full rounded-xl max-h-48 object-cover' />
-              <button onClick={() => setAbrirEditor(true)}
-                className='absolute bottom-2 right-2 bg-[#767171] text-white text-xs font-bold px-3 py-1 rounded-lg'>
-                Editar Foto
+        {/* Layout em duas colunas */}
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+
+          {/* Coluna Esquerda - Detalhes */}
+          <div className='space-y-6'>
+
+            {/* Informações do Chamado */}
+            <div className='bg-white rounded-xl shadow-sm p-6'>
+              <div className='flex justify-between items-start mb-6'>
+                <div>
+                  <h1 className='text-2xl font-bold text-[#2c2c2c] tracking-tight mb-2'>{chamado.codigo_unico}</h1>
+                  <p className='text-sm text-[#6b7280]'>{chamado.tipo_problema}</p>
+                </div>
+                <span className={`text-xs px-3 py-1.5 rounded-lg font-medium ${
+                  chamado.urgencia === 'baixa' ? 'bg-[#16a34a]/10 text-[#16a34a] border border-[#16a34a]/20' :
+                  chamado.urgencia === 'media' ? 'bg-[#d97706]/10 text-[#d97706] border border-[#d97706]/20' :
+                  chamado.urgencia === 'alta' ? 'bg-[#dc2626]/10 text-[#dc2626] border border-[#dc2626]/20' :
+                  'bg-[#dc2626]/10 text-[#dc2626] border border-[#dc2626]/20'
+                }`}>
+                  {urgenciaLabel[chamado.urgencia]}
+                </span>
+              </div>
+
+              {salaNome && (
+                <div className='flex items-center gap-2 mb-4'>
+                  <div className='w-2 h-2 rounded-full bg-[#767171]'></div>
+                  <p className='text-sm text-[#6b7280]'>Sala: <span className='font-medium text-[#1a1a1a]'>{salaNome}</span></p>
+                </div>
+              )}
+
+              <p className='text-sm text-[#6b7280] mb-6 leading-relaxed'>{chamado.descricao}</p>
+
+              <div className='flex items-center justify-between pt-4 border-t border-[#e5e3e3]'>
+                <div>
+                  <p className='text-xs uppercase tracking-wider text-[#6b7280] mb-1'>Aberto em</p>
+                  <p className='text-sm font-medium text-[#1a1a1a]'>{new Date(chamado.criado_em).toLocaleString('pt-BR')}</p>
+                </div>
+                <div className='text-right'>
+                  <p className='text-xs uppercase tracking-wider text-[#6b7280] mb-1'>Responsável</p>
+                  <p className='text-sm font-medium text-[#1a1a1a]'>{responsavelNome || 'Não atribuído'}</p>
+                </div>
+              </div>
+
+              {!isResponsavel && (
+                <button
+                  onClick={pegarChamado}
+                  className='w-full mt-6 bg-[#767171] hover:bg-[#5a5555] text-white font-medium py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2'
+                >
+                  <UserCheck size={18} />
+                  Pegar Chamado
+                </button>
+              )}
+            </div>
+
+            {/* Fotos do Usuário */}
+            {anexos.filter(a => a.tipo === 'usuario').length > 0 && (
+              <div className='bg-white rounded-xl shadow-sm p-6'>
+                <h2 className='text-lg font-semibold text-[#2c2c2c] mb-4'>Fotos do Usuário</h2>
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                  {anexos.filter(a => a.tipo === 'usuario').map(a => (
+                    <img key={a.id} src={a.url} alt='Foto usuário' className='w-full rounded-lg object-cover max-h-48 border border-[#e5e3e3]' />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Fotos da Equipe */}
+            {anexos.filter(a => a.tipo === 'equipe').length > 0 && (
+              <div className='bg-white rounded-xl shadow-sm p-6'>
+                <h2 className='text-lg font-semibold text-[#2c2c2c] mb-4'>Fotos da Equipe</h2>
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                  {anexos.filter(a => a.tipo === 'equipe').map(a => (
+                    <img key={a.id} src={a.url} alt='Foto equipe' className='w-full rounded-lg object-cover max-h-48 border border-[#e5e3e3]' />
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </div>
+
+          {/* Coluna Direita - Atualização e Histórico */}
+          <div className='space-y-6'>
+
+            {/* Atualizar Status */}
+            <div className='bg-white rounded-xl shadow-sm p-6'>
+              <h2 className='text-lg font-semibold text-[#2c2c2c] mb-6'>Atualizar Status</h2>
+
+              <div className='grid grid-cols-1 gap-3 mb-6'>
+                {statusOrdem.map(s => (
+                  <button
+                    key={s}
+                    onClick={() => setNovoStatus(s)}
+                    className={`py-3 px-4 rounded-lg border text-sm font-medium transition-all duration-200 ${
+                      novoStatus === s
+                        ? 'bg-[#767171] border-[#767171] text-white'
+                        : 'bg-white border-[#e5e3e3] text-[#1a1a1a] hover:border-[#767171]'
+                    }`}
+                  >
+                    {statusLabel[s]}
+                  </button>
+                ))}
+              </div>
+
+              <div className='mb-6'>
+                <label className='block text-xs uppercase tracking-wider text-[#6b7280] mb-2'>Observação (opcional)</label>
+                <textarea
+                  className='w-full border border-[#e5e3e3] rounded-lg p-4 text-sm text-[#1a1a1a] min-h-24 focus:outline-none focus:border-[#767171] focus:ring-1 focus:ring-[#767171] transition-all duration-200'
+                  placeholder='Adicione uma observação...'
+                  value={observacao}
+                  onChange={e => setObservacao(e.target.value)}
+                />
+              </div>
+
+              <div className='mb-6'>
+                <label className='block text-xs uppercase tracking-wider text-[#6b7280] mb-2'>Adicionar Foto</label>
+                <input
+                  type='file'
+                  accept='image/*'
+                  onChange={selecionarFoto}
+                  className='w-full border border-[#e5e3e3] rounded-lg p-4 text-sm text-[#6b7280] focus:outline-none focus:border-[#767171] focus:ring-1 focus:ring-[#767171] transition-all duration-200'
+                />
+                {(fotoEditada || fotoPreview) && (
+                  <div className='relative mt-4'>
+                    <img src={fotoEditada || fotoPreview} alt='Preview' className='w-full rounded-lg max-h-48 object-cover border border-[#e5e3e3]' />
+                    <button
+                      onClick={() => setAbrirEditor(true)}
+                      className='absolute bottom-3 right-3 bg-[#767171] hover:bg-[#5a5555] text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200'
+                    >
+                      Editar Foto
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={salvar}
+                disabled={salvando}
+                className='w-full bg-[#767171] hover:bg-[#5a5555] text-white font-medium py-3 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
+              >
+                {salvando ? 'Salvando...' : 'Salvar Alterações'}
               </button>
             </div>
-          )}
-        </div>
-        <button onClick={salvar} disabled={salvando}
-          className='w-full bg-[#767171] hover:bg-[#5a5555] text-white font-bold py-3 rounded-xl transition disabled:opacity-50'>
-          {salvando ? 'Salvando...' : 'Salvar'}
-        </button>
-      </div>
 
-      <div className='bg-white rounded-2xl shadow p-5 mb-4'>
-        <p className='text-sm font-semibold text-gray-700 mb-3'>Historico</p>
-        <div className='flex flex-col gap-4'>
-          {historico.map(h => (
-            <div key={h.id} className='flex items-start gap-3 border-b border-gray-50 pb-3'>
-              <div className='w-2 h-2 rounded-full bg-[#767171] mt-1.5 flex-shrink-0' />
-              <div className='flex-1'>
-                <div className='flex justify-between items-center mb-1'>
-                  <p className='text-sm font-medium text-gray-700'>{statusLabel[h.status_novo]}</p>
-                  <p className='text-xs text-gray-400'>{new Date(h.criado_em).toLocaleString('pt-BR')}</p>
-                </div>
-                {h.observacao && <p className='text-xs text-gray-500 bg-gray-50 rounded-lg p-2'>{h.observacao}</p>}
+            {/* Histórico */}
+            <div className='bg-white rounded-xl shadow-sm p-6'>
+              <h2 className='text-lg font-semibold text-[#2c2c2c] mb-6'>Histórico</h2>
+              <div className='space-y-6'>
+                {historico.map((h, index) => {
+                  const isLast = index === historico.length - 1
+                  return (
+                    <div key={h.id} className='flex items-start gap-4 relative'>
+                      {!isLast && (
+                        <div className='absolute left-2 top-6 w-0.5 h-full bg-[#e5e3e3]'></div>
+                      )}
+                      <div className='w-4 h-4 rounded-full bg-[#767171] mt-0.5 flex-shrink-0'></div>
+                      <div className='flex-1'>
+                        <div className='flex justify-between items-start mb-2'>
+                          <p className='text-sm font-medium text-[#1a1a1a]'>{statusLabel[h.status_novo]}</p>
+                          <p className='text-xs text-[#6b7280]'>{new Date(h.criado_em).toLocaleString('pt-BR')}</p>
+                        </div>
+                        {h.observacao && (
+                          <p className='text-xs text-[#6b7280] bg-[#f5f4f4] rounded-lg p-3'>{h.observacao}</p>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {anexos.filter(a => a.tipo === 'equipe').length > 0 && (
-        <div className='bg-white rounded-2xl shadow p-5'>
-          <p className='text-sm font-semibold text-gray-700 mb-3'>Fotos da Equipe</p>
-          <div className='flex flex-col gap-2'>
-            {anexos.filter(a => a.tipo === 'equipe').map(a => (
-              <img key={a.id} src={a.url} alt='Foto equipe' className='w-full rounded-xl object-cover max-h-48' />
-            ))}
           </div>
         </div>
-      )}
 
-      {abrirEditor && (fotoEditada || fotoPreview) && (
-        <EditorFoto
-          imagemInicial={fotoEditada || fotoPreview}
-          onSalvar={dataUrl => { setFotoEditada(dataUrl); setAbrirEditor(false) }}
-          onCancelar={() => setAbrirEditor(false)}
-        />
-      )}
+        {abrirEditor && (fotoEditada || fotoPreview) && (
+          <EditorFoto
+            imagemInicial={fotoEditada || fotoPreview}
+            onSalvar={dataUrl => { setFotoEditada(dataUrl); setAbrirEditor(false) }}
+            onCancelar={() => setAbrirEditor(false)}
+          />
+        )}
+      </div>
     </main>
   )
 }

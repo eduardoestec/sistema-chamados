@@ -20,12 +20,13 @@ type Tecnico = {
 }
 
 function ModalNovoUsuario({ onSalvar, onFechar }: {
-  onSalvar: (nome: string, email: string, senha: string) => Promise<string | null>
+  onSalvar: (nome: string, email: string, senha: string, nivel: string) => Promise<string | null>
   onFechar: () => void
 }) {
   const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
+  const [nivel, setNivel] = useState('tecnico')
   const [erro, setErro] = useState('')
   const [salvando, setSalvando] = useState(false)
 
@@ -33,7 +34,7 @@ function ModalNovoUsuario({ onSalvar, onFechar }: {
     if (!nome.trim() || !email.trim() || !senha.trim()) { setErro('Preencha todos os campos'); return }
     setSalvando(true)
     setErro('')
-    const erroMsg = await onSalvar(nome.trim(), email.trim(), senha.trim())
+    const erroMsg = await onSalvar(nome.trim(), email.trim(), senha.trim(), nivel)
     if (erroMsg) { setErro(erroMsg); setSalvando(false) }
   }
 
@@ -41,20 +42,28 @@ function ModalNovoUsuario({ onSalvar, onFechar }: {
     <div className='fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4'>
       <div className='bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm'>
         <div className='flex justify-between items-center mb-4'>
-          <h2 className='font-bold text-gray-800'>Novo Tecnico</h2>
+          <h2 className='font-bold text-gray-800'>Novo Usuario</h2>
           <button onClick={onFechar} className='text-gray-400 hover:text-gray-600'><X size={20} /></button>
         </div>
         <div className='mb-4'>
           <label className='block text-sm font-semibold text-gray-700 mb-1'>Nome</label>
           <input value={nome} onChange={e => setNome(e.target.value)}
             className='w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#767171]'
-            placeholder='Nome do tecnico' />
+            placeholder='Nome do usuario' />
         </div>
         <div className='mb-4'>
-          <label className='block text-sm font-semibold text-gray-700 mb-1'>Email</label>
-          <input type='email' value={email} onChange={e => setEmail(e.target.value)}
+          <label className='block text-sm font-semibold text-gray-700 mb-1'>Usuario</label>
+          <input type='text' value={email} onChange={e => setEmail(e.target.value)}
             className='w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#767171]'
-            placeholder='email@exemplo.com' />
+            placeholder='nome.sobrenome' />
+        </div>
+        <div className='mb-4'>
+          <label className='block text-sm font-semibold text-gray-700 mb-1'>Nivel</label>
+          <select value={nivel} onChange={e => setNivel(e.target.value)}
+            className='w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#767171]'>
+            <option value='tecnico'>Tecnico</option>
+            <option value='gestor'>Gestor</option>
+          </select>
         </div>
         <div className='mb-6'>
           <label className='block text-sm font-semibold text-gray-700 mb-1'>Senha</label>
@@ -65,7 +74,7 @@ function ModalNovoUsuario({ onSalvar, onFechar }: {
         {erro && <p className='text-red-500 text-sm mb-4'>{erro}</p>}
         <button onClick={handleConfirmar} disabled={salvando}
           className='w-full bg-[#767171] hover:bg-[#5a5555] text-white font-bold py-3 rounded-xl transition disabled:opacity-50'>
-          {salvando ? 'Criando...' : 'Criar Tecnico'}
+          {salvando ? 'Criando...' : 'Criar Usuario'}
         </button>
       </div>
     </div>
@@ -122,11 +131,11 @@ export default function UsuariosPage() {
     setCarregando(false)
   }
 
-  async function criarTecnico(nome: string, email: string, senha: string): Promise<string | null> {
+  async function criarTecnico(nome: string, email: string, senha: string, nivel: string): Promise<string | null> {
     const res = await fetch('/api/admin/usuarios', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome, email, senha })
+      body: JSON.stringify({ nome, email, senha, nivel })
     })
     const data = await res.json()
     if (!res.ok) return data.erro || 'Erro ao criar usuário'
@@ -154,7 +163,7 @@ export default function UsuariosPage() {
         </div>
         <button onClick={() => setModalNovo(true)}
           className='flex items-center gap-2 bg-[#767171] hover:bg-[#5a5555] text-white font-bold px-4 py-2 rounded-xl transition'>
-          <Plus size={16} /> Novo Tecnico
+          <Plus size={16} /> Novo Usuario
         </button>
       </div>
 

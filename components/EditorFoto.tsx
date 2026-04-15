@@ -1,5 +1,6 @@
 'use client'
 import { useRef, useState, useEffect } from 'react'
+import { Pen, ArrowRight, Square, Type, Palette, Minus, Plus } from 'lucide-react'
 
 type Ferramenta = 'caneta' | 'seta' | 'retangulo' | 'texto'
 
@@ -12,7 +13,7 @@ interface Props {
 export default function EditorFoto({ onSalvar, onCancelar, imagemInicial }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [ferramenta, setFerramenta] = useState<Ferramenta>('caneta')
-  const [cor, setCor] = useState('#ff0000')
+  const [cor, setCor] = useState('#dc2626')
   const [espessura, setEspessura] = useState(3)
   const [desenhando, setDesenhando] = useState(false)
   const [inicio, setInicio] = useState({ x: 0, y: 0 })
@@ -125,49 +126,133 @@ export default function EditorFoto({ onSalvar, onCancelar, imagemInicial }: Prop
   }
 
   const ferramentas = [
-    { id: 'caneta', label: 'Caneta' },
-    { id: 'seta', label: 'Seta' },
-    { id: 'retangulo', label: 'Retangulo' },
-    { id: 'texto', label: 'Texto' },
+    { id: 'caneta', icon: Pen, label: 'Caneta' },
+    { id: 'seta', icon: ArrowRight, label: 'Seta' },
+    { id: 'retangulo', icon: Square, label: 'Retângulo' },
+    { id: 'texto', icon: Type, label: 'Texto' },
   ]
 
   return (
-    <div className='fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4'>
-      <div className='bg-white rounded-2xl shadow-xl w-full max-w-3xl flex flex-col max-h-screen overflow-auto'>
-        <div className='flex items-center justify-between p-4 border-b border-gray-100'>
-          <h2 className='font-bold text-gray-800'>Editor de Foto</h2>
-          <button onClick={onCancelar} className='text-gray-400 hover:text-gray-600 text-xl'>x</button>
+    <div className='fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4'>
+      <div className='bg-white rounded-xl shadow-md w-full max-w-4xl flex flex-col max-h-screen overflow-hidden'>
+        {/* Header */}
+        <div className='flex items-center justify-between p-6 border-b border-[#e5e3e3]'>
+          <h2 className='text-lg font-semibold text-[#2c2c2c]'>Editor de Foto</h2>
+          <button
+            onClick={onCancelar}
+            className='text-[#6b7280] hover:text-[#1a1a1a] transition-all duration-200 text-xl font-light'
+          >
+            ×
+          </button>
         </div>
-        <div className='flex gap-2 p-3 border-b border-gray-100 flex-wrap'>
-          {ferramentas.map(f => (
-            <button key={f.id} onClick={() => setFerramenta(f.id as Ferramenta)}
-              className={ferramenta === f.id ? 'px-3 py-1 rounded-lg text-sm font-medium bg-[#767171] text-white' : 'px-3 py-1 rounded-lg text-sm font-medium bg-gray-100 text-gray-600'}>
-              {f.label}
-            </button>
-          ))}
-          <input type='color' value={cor} onChange={e => setCor(e.target.value)} className='w-8 h-8 rounded cursor-pointer' />
-          <select value={espessura} onChange={e => setEspessura(Number(e.target.value))} className='border border-gray-200 rounded-lg px-2 text-sm'>
-            <option value={2}>Fino</option>
-            <option value={4}>Medio</option>
-            <option value={8}>Grosso</option>
-          </select>
+
+        {/* Toolbar */}
+        <div className='flex items-center gap-4 p-6 border-b border-[#e5e3e3] bg-[#f5f4f4]'>
+          <div className='flex items-center gap-2'>
+            {ferramentas.map(f => {
+              const Icon = f.icon
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setFerramenta(f.id as Ferramenta)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    ferramenta === f.id
+                      ? 'bg-[#767171] text-white'
+                      : 'bg-white text-[#1a1a1a] hover:bg-[#e5e3e3]'
+                  }`}
+                >
+                  <Icon size={16} />
+                  {f.label}
+                </button>
+              )
+            })}
+          </div>
+
+          <div className='flex items-center gap-3 ml-auto'>
+            <div className='flex items-center gap-2'>
+              <Palette size={16} className='text-[#6b7280]' />
+              <input
+                type='color'
+                value={cor}
+                onChange={e => setCor(e.target.value)}
+                className='w-8 h-8 rounded border border-[#e5e3e3] cursor-pointer'
+              />
+            </div>
+
+            <div className='flex items-center gap-2'>
+              <button
+                onClick={() => setEspessura(Math.max(1, espessura - 1))}
+                className='p-1 rounded bg-white hover:bg-[#e5e3e3] transition-all duration-200'
+              >
+                <Minus size={14} className='text-[#6b7280]' />
+              </button>
+              <span className='text-sm text-[#1a1a1a] font-medium min-w-8 text-center'>{espessura}</span>
+              <button
+                onClick={() => setEspessura(Math.min(20, espessura + 1))}
+                className='p-1 rounded bg-white hover:bg-[#e5e3e3] transition-all duration-200'
+              >
+                <Plus size={14} className='text-[#6b7280]' />
+              </button>
+            </div>
+          </div>
         </div>
+
+        {/* Input de texto */}
         {ferramenta === 'texto' && posTexto && (
-          <div className='flex gap-2 p-3 border-b border-gray-100'>
-            <input className='flex-1 border border-gray-200 rounded-lg px-3 py-1 text-sm' placeholder='Digite o texto...'
-              value={texto} onChange={e => setTexto(e.target.value)} onKeyDown={e => e.key === 'Enter' && adicionarTexto()} autoFocus />
-            <button onClick={adicionarTexto} className='bg-[#767171] text-white font-bold px-4 rounded-lg text-sm'>OK</button>
+          <div className='flex gap-3 p-6 border-b border-[#e5e3e3]'>
+            <input
+              className='flex-1 border border-[#e5e3e3] rounded-lg px-4 py-3 text-sm text-[#1a1a1a] focus:outline-none focus:border-[#767171] focus:ring-1 focus:ring-[#767171] transition-all duration-200'
+              placeholder='Digite o texto...'
+              value={texto}
+              onChange={e => setTexto(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && adicionarTexto()}
+              autoFocus
+            />
+            <button
+              onClick={adicionarTexto}
+              className='bg-[#767171] hover:bg-[#5a5555] text-white font-medium px-6 py-3 rounded-lg transition-all duration-200'
+            >
+              Adicionar
+            </button>
           </div>
         )}
-        <div className='p-4 overflow-auto flex-1'>
-          <canvas ref={canvasRef} style={{ cursor: ferramenta === 'texto' ? 'text' : 'crosshair', maxWidth: '100%' }}
-            onMouseDown={iniciarDesenho} onMouseMove={desenhar} onMouseUp={finalizarDesenho} onMouseLeave={finalizarDesenho}
-            onTouchStart={iniciarDesenho} onTouchMove={desenhar} onTouchEnd={finalizarDesenho}
-          />
+
+        {/* Canvas */}
+        <div className='p-6 overflow-auto flex-1 bg-[#f8f7f7]'>
+          <div className='flex justify-center'>
+            <canvas
+              ref={canvasRef}
+              style={{
+                cursor: ferramenta === 'texto' ? 'text' : 'crosshair',
+                maxWidth: '100%',
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+              }}
+              onMouseDown={iniciarDesenho}
+              onMouseMove={desenhar}
+              onMouseUp={finalizarDesenho}
+              onMouseLeave={finalizarDesenho}
+              onTouchStart={iniciarDesenho}
+              onTouchMove={desenhar}
+              onTouchEnd={finalizarDesenho}
+            />
+          </div>
         </div>
-        <div className='flex gap-2 p-4 border-t border-gray-100'>
-          <button onClick={onCancelar} className='flex-1 border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl'>Cancelar</button>
-          <button onClick={salvar} className='flex-1 bg-[#767171] hover:bg-[#5a5555] text-white font-bold py-3 rounded-xl'>Salvar Foto</button>
+
+        {/* Footer */}
+        <div className='flex gap-3 p-6 border-t border-[#e5e3e3]'>
+          <button
+            onClick={onCancelar}
+            className='flex-1 border border-[#e5e3e3] text-[#6b7280] hover:bg-[#f5f4f4] font-medium py-3 rounded-lg transition-all duration-200'
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={salvar}
+            className='flex-1 bg-[#767171] hover:bg-[#5a5555] text-white font-medium py-3 rounded-lg transition-all duration-200'
+          >
+            Salvar Foto
+          </button>
         </div>
       </div>
     </div>

@@ -10,15 +10,15 @@ const supabaseAdmin = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    const { nome, email, senha } = await req.json()
+    const { nome, email, senha, nivel } = await req.json()
 
-    if (!nome || !email || !senha) {
+    if (!nome || !email || !senha || !nivel) {
       return NextResponse.json({ erro: 'Campos obrigatorios faltando' }, { status: 400 })
     }
 
     // Criar usuário via Admin API
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
+      email: email + '@as-engenharia.com',
       password: senha,
       email_confirm: true,
     })
@@ -27,10 +27,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ erro: authError.message }, { status: 400 })
     }
 
-    // Inserir perfil como tecnico
+    // Inserir perfil
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .insert({ id: authData.user.id, nome, nivel: 'tecnico' })
+      .insert({ id: authData.user.id, nome, nivel })
 
     if (profileError) {
       return NextResponse.json({ erro: profileError.message }, { status: 500 })

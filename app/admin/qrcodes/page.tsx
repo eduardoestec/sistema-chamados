@@ -46,6 +46,7 @@ function PlacaQR({ sala, onExcluir }: { sala: Sala; onExcluir: (id: string) => v
         {sala.localizacao && (
           <p className='text-xs text-gray-400 text-center mt-0.5'>{sala.localizacao}</p>
         )}
+        <p className='text-xs text-gray-400 text-center mt-1'>ID: {sala.qrcode_token.substring(0, 8)}</p>
         <p className='text-xs text-gray-400 text-center mt-1'>Escaneie para abrir um chamado</p>
       </div>
       <button
@@ -132,6 +133,17 @@ export default function QRCodesPage() {
   }
 
   async function criarSala(nome: string, localizacao: string): Promise<string | null> {
+    // Verificar duplicatas
+    const { data: existente } = await supabase
+      .from('salas')
+      .select('id')
+      .ilike('nome', nome)
+      .ilike('localizacao', localizacao)
+      .limit(1)
+    if (existente && existente.length > 0) {
+      return 'Já existe uma sala com este nome e localização'
+    }
+
     const token = nome.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now()
     const { error } = await supabase.from('salas').insert({ nome, localizacao, qrcode_token: token })
     if (error) return error.message

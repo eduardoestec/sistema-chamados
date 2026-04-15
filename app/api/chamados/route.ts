@@ -6,7 +6,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 )
 
-async function gerarCodigo(supabase: ReturnType<typeof createClient>): Promise<string> {
+async function gerarCodigo(): Promise<string> {
   const { data } = await supabase
     .from('chamados')
     .select('codigo_unico')
@@ -17,7 +17,7 @@ async function gerarCodigo(supabase: ReturnType<typeof createClient>): Promise<s
 
   let proximo = 1
   if (data?.codigo_unico) {
-    const num = parseInt(data.codigo_unico.replace('AS-', ''), 10)
+    const num = parseInt((data.codigo_unico as string).replace('AS-', ''), 10)
     if (!isNaN(num)) proximo = num + 1
   }
   return 'AS-' + String(proximo).padStart(4, '0')
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ erro: 'Campos obrigatorios faltando' }, { status: 400 })
     }
 
-    const codigo_unico = await gerarCodigo(supabase)
+    const codigo_unico = await gerarCodigo()
 
     const { data, error } = await supabase
       .from('chamados')

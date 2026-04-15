@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
-import { QrCode, BarChart2, LogOut, Wrench, Users } from 'lucide-react'
+import { QrCode, BarChart2, LogOut, Wrench, Users, Bell, FileText, Clock, AlertTriangle, User } from 'lucide-react'
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,7 +11,12 @@ const supabase = createBrowserClient(
 )
 
 const statusLabel = { enviado: 'Enviado', recebido: 'Recebido', em_analise: 'Em Analise', em_andamento: 'Em Andamento', resolvido: 'Resolvido' }
-const urgenciaCor = { baixa: 'bg-gray-100 text-gray-600', media: 'bg-yellow-100 text-yellow-700', alta: 'bg-orange-100 text-orange-700', muito_alta: 'bg-red-100 text-red-700' }
+const urgenciaCor = {
+  baixa: 'bg-[#16a34a]/10 text-[#16a34a] border-[#16a34a]/20',
+  media: 'bg-[#d97706]/10 text-[#d97706] border-[#d97706]/20',
+  alta: 'bg-[#dc2626]/10 text-[#dc2626] border-[#dc2626]/20',
+  muito_alta: 'bg-[#dc2626]/10 text-[#dc2626] border-[#dc2626]/20'
+}
 const urgenciaLabel = { baixa: 'Baixa', media: 'Media', alta: 'Alta', muito_alta: 'Muito Alta' }
 
 export default function AdminPage() {
@@ -21,12 +26,16 @@ export default function AdminPage() {
   const [filtroUrgencia, setFiltroUrgencia] = useState('')
   const [carregando, setCarregando] = useState(true)
   const [nivel, setNivel] = useState('')
+  const [notificacoesNaoLidas, setNotificacoesNaoLidas] = useState(0)
 
   useEffect(() => {
     setNivel(localStorage.getItem('admin_nivel') || '')
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) { router.push('/admin/login'); return }
       carregarChamados()
+      if (localStorage.getItem('admin_nivel') === 'gestor') {
+        carregarNotificacoes()
+      }
     })
   }, [])
 
@@ -54,6 +63,14 @@ export default function AdminPage() {
     setCarregando(false)
   }
 
+  async function carregarNotificacoes() {
+    const { count } = await supabase
+      .from('notificacoes')
+      .select('*', { count: 'exact', head: true })
+      .eq('lido', false)
+    setNotificacoesNaoLidas(count || 0)
+  }
+
   async function sair() {
     await supabase.auth.signOut()
     router.push('/admin/login')
@@ -66,116 +83,181 @@ export default function AdminPage() {
   })
 
   const emAberto = chamados.filter(c => c.status !== 'resolvido').length
-  const resolvidos = chamados.filter(c => c.status === 'resolvido').length
   const muitoAlta = chamados.filter(c => c.urgencia === 'muito_alta' && c.status !== 'resolvido').length
 
   return (
-    <main className='bg-gray-50 flex'>
+    <main className='bg-[#f8f7f7] flex min-h-screen'>
 
       {/* Sidebar */}
-      <aside className='fixed left-0 top-0 z-10 w-20 h-screen bg-gray-900 flex flex-col items-center justify-between py-6 flex-shrink-0'>
+      <aside className='fixed left-0 top-0 z-10 w-20 h-screen bg-[#2c2c2c] flex flex-col items-center justify-between py-6 flex-shrink-0'>
         <div className='flex flex-col items-center gap-1'>
           <div className='bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center'>
             <Wrench size={22} className='text-white' />
           </div>
           <span className='text-white text-xs font-bold mt-1'>A.S</span>
         </div>
-        <div className='flex flex-col items-center gap-6'>
+        <div className='flex flex-col items-center gap-4'>
           {nivel === 'gestor' && (
             <>
-              <Link href='/admin/usuarios' className='flex flex-col items-center gap-1 group'>
-                <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition'>
-                  <Users size={20} className='text-white transition' />
+              <div className='w-8 h-px bg-[#6b7280]'></div>
+              <Link href='/admin/notificacoes' className='flex flex-col items-center gap-1 group relative'>
+                <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition-all duration-200 relative'>
+                  <Bell size={20} className='text-white transition-all duration-200' />
+                  {notificacoesNaoLidas > 0 && (
+                    <span className='absolute -top-1 -right-1 bg-[#dc2626] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium'>
+                      {notificacoesNaoLidas > 9 ? '9+' : notificacoesNaoLidas}
+                    </span>
+                  )}
                 </div>
-                <span className='text-gray-400 text-xs group-hover:text-[#767171] transition text-center leading-tight'>Usuarios</span>
+                <span className='text-gray-400 text-xs group-hover:text-[#767171] transition-all duration-200 text-center leading-tight'>Notific.</span>
+              </Link>
+              <Link href='/admin/usuarios' className='flex flex-col items-center gap-1 group'>
+                <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition-all duration-200'>
+                  <Users size={20} className='text-white transition-all duration-200' />
+                </div>
+                <span className='text-gray-400 text-xs group-hover:text-[#767171] transition-all duration-200 text-center leading-tight'>Usuários</span>
               </Link>
               <Link href='/admin/qrcodes' className='flex flex-col items-center gap-1 group'>
-                <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition'>
-                  <QrCode size={20} className='text-white transition' />
+                <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition-all duration-200'>
+                  <QrCode size={20} className='text-white transition-all duration-200' />
                 </div>
-                <span className='text-gray-400 text-xs group-hover:text-[#767171] transition text-center leading-tight'>QR Codes</span>
+                <span className='text-gray-400 text-xs group-hover:text-[#767171] transition-all duration-200 text-center leading-tight'>QR Codes</span>
               </Link>
               <Link href='/admin/relatorios' className='flex flex-col items-center gap-1 group'>
-                <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition'>
-                  <BarChart2 size={20} className='text-white transition' />
+                <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition-all duration-200'>
+                  <BarChart2 size={20} className='text-white transition-all duration-200' />
                 </div>
-                <span className='text-gray-400 text-xs group-hover:text-[#767171] transition text-center leading-tight'>Relatorios</span>
+                <span className='text-gray-400 text-xs group-hover:text-[#767171] transition-all duration-200 text-center leading-tight'>Relatórios</span>
               </Link>
             </>
           )}
+          <div className='w-8 h-px bg-[#6b7280]'></div>
           <button onClick={sair} className='flex flex-col items-center gap-1 group'>
-            <div className='bg-gray-700 group-hover:bg-red-500 rounded-xl w-12 h-12 flex items-center justify-center transition'>
-              <LogOut size={20} className='text-white transition' />
+            <div className='bg-gray-700 group-hover:bg-[#dc2626] rounded-xl w-12 h-12 flex items-center justify-center transition-all duration-200'>
+              <LogOut size={20} className='text-white transition-all duration-200' />
             </div>
-            <span className='text-gray-400 text-xs group-hover:text-red-400 transition'>Sair</span>
+            <span className='text-gray-400 text-xs group-hover:text-[#dc2626] transition-all duration-200'>Sair</span>
           </button>
         </div>
       </aside>
 
-      {/* Conteudo principal */}
-      <div className='ml-20 flex-1 h-screen flex flex-col'>
+      {/* Conteúdo principal */}
+      <div className='ml-20 flex-1 flex flex-col min-h-screen'>
 
-        {/* Header fixo */}
-        <div className='flex-shrink-0 p-4 sm:p-6 pb-0'>
-          <div className='mb-6'>
-            <h1 className='text-2xl font-bold text-gray-800'>Painel de Chamados</h1>
-            <p className='text-sm text-gray-500'>Manutencao Predial</p>
+        {/* Header */}
+        <div className='flex-shrink-0 bg-white border-b border-[#e5e3e3] p-6'>
+          <div className='flex justify-between items-center'>
+            <div>
+              <h1 className='text-2xl font-bold text-[#2c2c2c] tracking-tight'>Painel de Chamados</h1>
+              <p className='text-sm text-[#6b7280]'>Manutenção Predial - Sistema de Chamados</p>
+            </div>
+            <div className='flex items-center gap-3'>
+              <div className='text-right'>
+                <p className='text-sm font-medium text-[#1a1a1a]'>{localStorage.getItem('admin_nome') || 'Usuário'}</p>
+                <p className='text-xs text-[#6b7280] capitalize'>{nivel}</p>
+              </div>
+              <div className='bg-[#767171] rounded-xl w-10 h-10 flex items-center justify-center'>
+                <User size={20} className='text-white' />
+              </div>
+            </div>
           </div>
+        </div>
 
-          {/* Cards de resumo */}
-          <div className='grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6'>
-            <div className='bg-white rounded-2xl shadow p-5'>
-              <p className='text-xs text-gray-400 mb-1'>Total de Chamados</p>
-              <p className='text-3xl font-black text-gray-800'>{chamados.length}</p>
+        {/* Cards de resumo */}
+        <div className='sticky top-0 bg-[#f8f7f7] z-10 p-6 border-b border-[#e5e3e3]'>
+          <div className='grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8'>
+            <div className='bg-white rounded-xl shadow-sm p-6'>
+              <div className='flex items-center gap-3 mb-3'>
+                <div className='bg-[#767171]/10 rounded-lg p-2'>
+                  <FileText size={24} className='text-[#767171]' />
+                </div>
+                <div>
+                  <p className='text-xs uppercase tracking-wider text-[#6b7280]'>Total de Chamados</p>
+                  <p className='text-3xl font-black text-[#2c2c2c]'>{chamados.length}</p>
+                </div>
+              </div>
             </div>
-            <div className='bg-white rounded-2xl shadow p-5'>
-              <p className='text-xs text-gray-400 mb-1'>Em Aberto</p>
-              <p className='text-3xl font-black text-[#767171]'>{emAberto}</p>
+            <div className='bg-white rounded-xl shadow-sm p-6'>
+              <div className='flex items-center gap-3 mb-3'>
+                <div className='bg-[#767171]/10 rounded-lg p-2'>
+                  <Clock size={24} className='text-[#767171]' />
+                </div>
+                <div>
+                  <p className='text-xs uppercase tracking-wider text-[#6b7280]'>Em Aberto</p>
+                  <p className='text-3xl font-black text-[#767171]'>{emAberto}</p>
+                </div>
+              </div>
             </div>
-            <div className='bg-white rounded-2xl shadow p-5'>
-              <p className='text-xs text-gray-400 mb-1'>Urgencia Muito Alta</p>
-              <p className='text-3xl font-black text-red-500'>{muitoAlta}</p>
+            <div className='bg-white rounded-xl shadow-sm p-6'>
+              <div className='flex items-center gap-3 mb-3'>
+                <div className='bg-[#dc2626]/10 rounded-lg p-2'>
+                  <AlertTriangle size={24} className='text-[#dc2626]' />
+                </div>
+                <div>
+                  <p className='text-xs uppercase tracking-wider text-[#6b7280]'>Urgência Muito Alta</p>
+                  <p className='text-3xl font-black text-[#dc2626]'>{muitoAlta}</p>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Filtros */}
-          <div className='flex gap-2 mb-4 flex-wrap'>
-            <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}
-              className='border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none bg-white'>
-              <option value=''>Todos os status</option>
-              {Object.entries(statusLabel).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
-            <select value={filtroUrgencia} onChange={e => setFiltroUrgencia(e.target.value)}
-              className='border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none bg-white'>
-              <option value=''>Todas as urgencias</option>
-              {Object.entries(urgenciaLabel).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
-            <span className='text-sm text-gray-400 self-center ml-2'>{filtrados.length} chamados</span>
+          <div className='flex gap-4 mb-6 flex-wrap'>
+            <div>
+              <label className='block text-xs uppercase tracking-wider text-[#6b7280] mb-2'>Status</label>
+              <select
+                value={filtroStatus}
+                onChange={e => setFiltroStatus(e.target.value)}
+                className='border border-[#e5e3e3] rounded-lg px-4 py-3 text-sm text-[#1a1a1a] focus:outline-none focus:border-[#767171] focus:ring-1 focus:ring-[#767171] transition-all duration-200 bg-white'
+              >
+                <option value=''>Todos os status</option>
+                {Object.entries(statusLabel).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className='block text-xs uppercase tracking-wider text-[#6b7280] mb-2'>Urgência</label>
+              <select
+                value={filtroUrgencia}
+                onChange={e => setFiltroUrgencia(e.target.value)}
+                className='border border-[#e5e3e3] rounded-lg px-4 py-3 text-sm text-[#1a1a1a] focus:outline-none focus:border-[#767171] focus:ring-1 focus:ring-[#767171] transition-all duration-200 bg-white'
+              >
+                <option value=''>Todas as urgências</option>
+                {Object.entries(urgenciaLabel).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </div>
+            <div className='flex items-end'>
+              <span className='text-sm text-[#6b7280] bg-[#f5f4f4] px-4 py-3 rounded-lg'>{filtrados.length} chamados</span>
+            </div>
           </div>
         </div>
 
-        {/* Lista de chamados com scroll */}
-        <div className='flex-1 overflow-y-auto px-4 sm:px-6 pb-6'>
-          {carregando && <p className='text-gray-400 text-sm'>Carregando...</p>}
-          <div className='flex flex-col gap-3'>
+        {/* Lista de chamados */}
+        <div className='flex-1 overflow-y-auto px-6 pb-6'>
+          {carregando && <p className='text-[#6b7280] text-sm'>Carregando...</p>}
+          <div className='flex flex-col gap-4'>
             {filtrados.map(c => (
-              <Link key={c.id} href={'/admin/chamado/' + c.id}
-                className='bg-white rounded-2xl shadow p-4 hover:shadow-md transition block'>
-                <div className='flex justify-between items-start mb-2'>
-                  <span className='font-bold text-gray-800'>{c.codigo_unico}</span>
-                  <span className={urgenciaCor[c.urgencia] + ' text-xs px-2 py-1 rounded-full font-medium'}>
-                    {urgenciaLabel[c.urgencia]}
+              <Link
+                key={c.id}
+                href={'/admin/chamado/' + c.id}
+                className='bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-all duration-200 block border border-transparent hover:border-[#767171]/20'
+              >
+                <div className='flex justify-between items-start mb-4'>
+                  <div>
+                    <h3 className='font-bold text-[#2c2c2c] text-lg mb-1'>{c.codigo_unico}</h3>
+                    <p className='text-sm text-[#6b7280]'>{c.tipo_problema}</p>
+                  </div>
+                  <span className={`${urgenciaCor[c.urgencia as keyof typeof urgenciaCor]} text-xs px-3 py-1.5 rounded-lg font-medium border`}>
+                    {urgenciaLabel[c.urgencia as keyof typeof urgenciaLabel]}
                   </span>
                 </div>
-                <p className='text-sm text-gray-600 mb-1'>{c.tipo_problema}</p>
-                <p className='text-xs text-gray-400 truncate mb-3'>{c.descricao}</p>
+                <p className='text-sm text-[#6b7280] mb-4 line-clamp-2'>{c.descricao}</p>
                 <div className='flex justify-between items-center'>
-                  <span className='text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full'>{statusLabel[c.status]}</span>
-                  <div className='flex items-center gap-2'>
-                    <span className={`text-xs font-medium ${c.responsavel_nome ? 'text-[#767171]' : 'text-gray-400'}`}>
-                      {c.responsavel_nome || 'Sem responsavel'}
+                  <span className='text-xs bg-[#f5f4f4] text-[#6b7280] px-3 py-1.5 rounded-lg font-medium'>{statusLabel[c.status as keyof typeof statusLabel]}</span>
+                  <div className='flex items-center gap-4 text-xs text-[#6b7280]'>
+                    <span className={c.responsavel_nome ? 'text-[#767171] font-medium' : ''}>
+                      {c.responsavel_nome || 'Sem responsável'}
                     </span>
-                    <span className='text-xs text-gray-400'>{new Date(c.criado_em).toLocaleDateString('pt-BR')}</span>
+                    <span>{new Date(c.criado_em).toLocaleDateString('pt-BR')}</span>
                   </div>
                 </div>
               </Link>

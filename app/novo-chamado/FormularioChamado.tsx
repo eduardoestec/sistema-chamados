@@ -67,72 +67,108 @@ export default function FormularioChamado() {
   }
 
   return (
-    <main className='min-h-screen p-4 sm:p-6 max-w-lg mx-auto'>
-      <button onClick={() => router.back()} className='flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-4'>
-        <ArrowLeft size={16} /> Voltar
-      </button>
-      <h1 className='text-2xl font-bold text-gray-800 mb-1'>Novo Chamado</h1>
-      <p className='text-sm text-gray-500 mb-6'>Sala: {sala}</p>
-
-      <div className='mb-5'>
-        <label className='block text-sm font-semibold text-gray-700 mb-2'>Tipo de Problema</label>
-        <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
-          {tipos.map(t => (
-            <button key={t} onClick={() => setTipo(t)}
-              className={`flex items-center gap-2 py-3 px-4 rounded-xl border text-sm font-medium transition ${tipo === t ? 'bg-[#767171] border-[#767171] text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-              <span className={tipo === t ? 'text-white' : 'text-gray-400'}>{tipoIcons[t]}</span>
-              {t}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className='mb-5'>
-        <label className='block text-sm font-semibold text-gray-700 mb-2'>Descricao</label>
-        <textarea className='w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 min-h-28 focus:outline-none focus:border-[#767171]'
-          placeholder='Descreva o problema...' value={descricao} onChange={e => setDescricao(e.target.value)} />
-      </div>
-
-      <div className='mb-5'>
-        <label className='block text-sm font-semibold text-gray-700 mb-2'>Urgencia</label>
-        <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
-          {urgencias.map(u => (
-            <button key={u} onClick={() => setUrgencia(u)}
-              className={`flex items-center gap-2 py-3 px-4 rounded-xl border text-sm font-medium transition ${urgencia === u ? 'bg-[#767171] border-[#767171] text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-              <span className={urgencia === u ? 'text-white' : 'text-gray-400'}>{urgenciaIcons[u]}</span>
-              {urgenciaLabel[u]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className='mb-8'>
-        <label className='block text-sm font-semibold text-gray-700 mb-2'>Foto (opcional)</label>
-        <input type='file' accept='image/*' onChange={selecionarFoto}
-          className='w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-600 mb-2' />
-        {(fotoEditada || fotoPreview) && (
-          <div className='relative mt-2'>
-            <img src={fotoEditada || fotoPreview} alt='Preview' className='w-full rounded-xl max-h-48 object-cover' />
-            <button onClick={() => setAbrirEditor(true)}
-              className='absolute bottom-2 right-2 bg-[#767171] text-white text-xs font-bold px-3 py-1 rounded-lg'>
-              Editar Foto
-            </button>
+    <main className='min-h-screen bg-[#f8f7f7] p-6'>
+      <div className='max-w-lg mx-auto'>
+        {/* Header */}
+        <div className='flex items-center justify-between mb-6'>
+          <button onClick={() => router.back()} className='flex items-center gap-2 text-[#6b7280] hover:text-[#1a1a1a] transition-all duration-200'>
+            <ArrowLeft size={20} />
+            <span className='text-sm font-medium'>Voltar</span>
+          </button>
+          <div className='bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center'>
+            <span className='text-white font-black text-lg'>AS</span>
           </div>
+        </div>
+
+        <h1 className='text-2xl font-bold text-[#2c2c2c] tracking-tight mb-2'>Novo Chamado</h1>
+        <p className='text-sm text-[#6b7280] mb-8'>Sala: {sala}</p>
+
+        {/* Tipo de Problema */}
+        <div className='bg-white rounded-xl shadow-sm p-6 mb-6'>
+          <h2 className='text-xs uppercase tracking-wider text-[#6b7280] mb-4'>Tipo de Problema</h2>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+            {tipos.map(t => (
+              <button key={t} onClick={() => setTipo(t)}
+                className={`flex items-center gap-3 py-4 px-4 rounded-lg border text-sm font-medium transition-all duration-200 min-h-[44px] cursor-pointer relative z-10 ${tipo === t ? 'bg-[#767171] border-[#767171] text-white' : 'bg-white border-[#e5e3e3] text-[#1a1a1a] hover:border-[#767171]'}`}>
+                <span className={tipo === t ? 'text-white' : 'text-[#6b7280]'}>{tipoIcons[t]}</span>
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Descrição */}
+        <div className='bg-white rounded-xl shadow-sm p-6 mb-6'>
+          <label className='block text-xs uppercase tracking-wider text-[#6b7280] mb-3'>Descrição</label>
+          <textarea
+            className='w-full border border-[#e5e3e3] rounded-lg p-4 text-sm text-[#1a1a1a] min-h-32 focus:outline-none focus:border-[#767171] focus:ring-1 focus:ring-[#767171] transition-all duration-200'
+            placeholder='Descreva o problema detalhadamente...'
+            value={descricao}
+            onChange={e => setDescricao(e.target.value)}
+          />
+        </div>
+
+        {/* Urgência */}
+        <div className='bg-white rounded-xl shadow-sm p-6 mb-6'>
+          <h2 className='text-xs uppercase tracking-wider text-[#6b7280] mb-4'>Urgência</h2>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+            {urgencias.map(u => {
+              const cores: Record<string, string> = {
+                baixa: urgencia === u ? 'bg-white text-[#16a34a] border-[#16a34a]' : 'bg-[#16a34a]/10 text-[#16a34a] border-[#16a34a]/20 hover:bg-[#16a34a]/20',
+                media: urgencia === u ? 'bg-white text-[#d97706] border-[#d97706]' : 'bg-[#d97706]/10 text-[#d97706] border-[#d97706]/20 hover:bg-[#d97706]/20',
+                alta: urgencia === u ? 'bg-white text-[#dc2626] border-[#dc2626]' : 'bg-[#dc2626]/10 text-[#dc2626] border-[#dc2626]/20 hover:bg-[#dc2626]/20',
+                muito_alta: urgencia === u ? 'bg-white text-[#dc2626] border-[#dc2626]' : 'bg-[#dc2626]/10 text-[#dc2626] border-[#dc2626]/20 hover:bg-[#dc2626]/20'
+              }
+              return (
+                <button key={u} onClick={() => setUrgencia(u)}
+                  className={`flex items-center gap-3 py-4 px-4 rounded-lg border text-sm font-medium transition-all duration-200 min-h-[44px] cursor-pointer relative z-10 ${cores[u]}`}>
+                  <span>{urgenciaIcons[u]}</span>
+                  {urgenciaLabel[u]}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Foto */}
+        <div className='bg-white rounded-xl shadow-sm p-6 mb-8'>
+          <label className='block text-xs uppercase tracking-wider text-[#6b7280] mb-3'>Foto (opcional)</label>
+          <input
+            type='file'
+            accept='image/*'
+            onChange={selecionarFoto}
+            className='w-full border border-[#e5e3e3] rounded-lg p-4 text-sm text-[#6b7280] focus:outline-none focus:border-[#767171] focus:ring-1 focus:ring-[#767171] transition-all duration-200'
+          />
+          {(fotoEditada || fotoPreview) && (
+            <div className='relative mt-4'>
+              <img src={fotoEditada || fotoPreview} alt='Preview' className='w-full rounded-lg max-h-48 object-cover border border-[#e5e3e3]' />
+              <button
+                onClick={() => setAbrirEditor(true)}
+                className='absolute bottom-3 right-3 bg-[#767171] hover:bg-[#5a5555] text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200'
+              >
+                Editar Foto
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Botão Enviar */}
+        <button
+          onClick={enviar}
+          disabled={enviando}
+          className='w-full bg-[#767171] hover:bg-[#5a5555] text-white font-medium py-4 rounded-lg text-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] cursor-pointer relative z-10'
+        >
+          {enviando ? 'Enviando...' : 'Enviar Chamado'}
+        </button>
+
+        {abrirEditor && (fotoEditada || fotoPreview) && (
+          <EditorFoto
+            imagemInicial={fotoEditada || fotoPreview}
+            onSalvar={dataUrl => { setFotoEditada(dataUrl); setAbrirEditor(false) }}
+            onCancelar={() => setAbrirEditor(false)}
+          />
         )}
       </div>
-
-      <button onClick={enviar} disabled={enviando}
-        className='w-full bg-[#767171] hover:bg-[#5a5555] text-white font-bold py-4 rounded-xl text-lg transition disabled:opacity-50'>
-        {enviando ? 'Enviando...' : 'Enviar Chamado'}
-      </button>
-
-      {abrirEditor && (fotoEditada || fotoPreview) && (
-        <EditorFoto
-          imagemInicial={fotoEditada || fotoPreview}
-          onSalvar={dataUrl => { setFotoEditada(dataUrl); setAbrirEditor(false) }}
-          onCancelar={() => setAbrirEditor(false)}
-        />
-      )}
     </main>
   )
 }

@@ -2,41 +2,69 @@
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Check } from 'lucide-react'
 
 function Confirmacao() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const codigo = searchParams.get('codigo')
   return (
-    <main className='min-h-screen flex flex-col items-center justify-center p-6 text-center'>
-      <div className='w-full max-w-sm'>
-        <button onClick={() => router.back()} className='flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-6'>
-          <ArrowLeft size={16} /> Voltar
-        </button>
+    <main className='min-h-screen bg-[#f8f7f7] flex flex-col items-center justify-center p-6 text-center'>
+      <div className='w-full max-w-md'>
+        {/* Header */}
+        <div className='flex justify-start mb-8'>
+          <button onClick={() => router.back()} className='flex items-center gap-2 text-[#6b7280] hover:text-[#1a1a1a] transition-all duration-200'>
+            <ArrowLeft size={20} />
+            <span className='text-sm font-medium'>Voltar</span>
+          </button>
+        </div>
+
+        {/* Ícone de Check */}
+        <div className='bg-[#16a34a] rounded-full p-6 mb-8 mx-auto w-fit'>
+          <Check size={48} className='text-white' />
+        </div>
+
+        <h1 className='text-3xl font-bold text-[#2c2c2c] tracking-tight mb-4'>Chamado Enviado!</h1>
+        <p className='text-[#6b7280] mb-8 max-w-sm mx-auto'>Guarde o código abaixo para acompanhar o andamento do seu chamado</p>
+
+        {/* Código */}
+        <div className='bg-white rounded-xl shadow-sm p-8 mb-8 border-2 border-[#767171]'>
+          <p className='text-xs uppercase tracking-wider text-[#6b7280] mb-3'>Seu Código</p>
+          <p className='text-4xl font-black text-[#2c2c2c] tracking-wider'>{codigo}</p>
+        </div>
+
+        {/* Botões */}
+        <div className='space-y-4'>
+          <Link
+            href='/acompanhar'
+            className='block w-full bg-[#767171] hover:bg-[#5a5555] text-white font-medium py-4 rounded-lg transition-all duration-200'
+          >
+            Acompanhar Chamado
+          </Link>
+          <Link
+            href='/'
+            className='block w-full border border-[#e5e3e3] text-[#6b7280] hover:bg-[#f5f4f4] font-medium py-4 rounded-lg transition-all duration-200'
+          >
+            Voltar ao Início
+          </Link>
+        </div>
       </div>
-      <div className='bg-green-100 rounded-full p-6 mb-6'>
-        <span className='text-5xl'>✅</span>
-      </div>
-      <h1 className='text-2xl font-bold text-gray-800 mb-2'>Chamado enviado!</h1>
-      <p className='text-gray-500 mb-8'>Guarde o codigo abaixo para acompanhar o andamento</p>
-      <div className='bg-[#767171] rounded-2xl px-10 py-6 mb-8'>
-        <p className='text-xs text-gray-200 uppercase tracking-wide mb-1'>Seu codigo</p>
-        <p className='text-4xl font-black text-white'>{codigo}</p>
-      </div>
-      <Link href='/acompanhar' className='bg-gray-900 text-white font-semibold py-3 px-8 rounded-xl mb-4 hover:bg-gray-700 transition'>
-        Acompanhar Chamado
-      </Link>
-      <Link href='/' className='text-gray-400 text-sm hover:text-gray-600'>
-        Voltar ao inicio
-      </Link>
     </main>
   )
 }
 
 export default function ConfirmacaoPage() {
   return (
-    <Suspense fallback={<div className='flex items-center justify-center min-h-screen'>Carregando...</div>}>
+    <Suspense fallback={
+      <div className='flex items-center justify-center min-h-screen bg-[#f8f7f7]'>
+        <div className='text-center'>
+          <div className='bg-[#767171] rounded-xl w-16 h-16 flex items-center justify-center mx-auto mb-4'>
+            <span className='text-white font-black text-xl'>AS</span>
+          </div>
+          <p className='text-[#6b7280]'>Carregando...</p>
+        </div>
+      </div>
+    }>
       <Confirmacao />
     </Suspense>
   )
