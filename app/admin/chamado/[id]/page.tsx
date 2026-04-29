@@ -1,9 +1,9 @@
-'use client'
+﻿'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import EditorFoto from '@/components/EditorFoto'
-import { UserCheck } from 'lucide-react'
+import { UserCheck, MessageSquare, ArrowRight } from 'lucide-react'
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,6 +22,7 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
   const [novoStatus, setNovoStatus] = useState('')
   const [observacao, setObservacao] = useState('')
   const [salvando, setSalvando] = useState(false)
+  const [adicionandoNota, setAdicionandoNota] = useState(false)
   const [adminId, setAdminId] = useState<string | null>(null)
   const [adminNome, setAdminNome] = useState('')
   const [salaNome, setSalaNome] = useState<string | null>(null)
@@ -140,11 +141,26 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
       admin_id: adminId
     })
 
-    // Se status mudou para resolvido, notificar gestores
+    // Notificar gestores sobre a ação realizada
     if (novoStatus === 'resolvido' && statusAnterior !== 'resolvido') {
       await supabase.from('notificacoes').insert({
-        titulo: 'Chamado Resolvido',
-        mensagem: `O chamado ${chamado.codigo_unico} foi resolvido por ${adminNome}`,
+        titulo: `Chamado resolvido — ${chamado.codigo_unico}`,
+        mensagem: `${adminNome} marcou o chamado ${chamado.codigo_unico} como RESOLVIDO — Sala: ${salaNome || 'N/A'}`,
+        lido: false,
+        destinatario_nivel: 'gestor'
+      })
+    } else if (novoStatus !== statusAnterior) {
+      await supabase.from('notificacoes').insert({
+        titulo: `Status atualizado — ${chamado.codigo_unico}`,
+        mensagem: `${adminNome} alterou o status de "${statusLabel[statusAnterior]}" para "${statusLabel[novoStatus]}" no chamado ${chamado.codigo_unico} — Sala: ${salaNome || 'N/A'}`,
+        lido: false,
+        destinatario_nivel: 'gestor'
+      })
+    } else if (observacao.trim()) {
+      await supabase.from('notificacoes').insert({
+        titulo: `Nova observacao — ${chamado.codigo_unico}`,
+        mensagem: `${adminNome} adicionou uma observacao no chamado ${chamado.codigo_unico}: "${observacao.trim()}"`,
+        lido: false,
         destinatario_nivel: 'gestor'
       })
     }
@@ -167,10 +183,33 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
     alert('Atualizado com sucesso!')
   }
 
+  async function adicionarNota() {
+    if (!observacao.trim()) { alert('Digite uma observação antes de adicionar a nota.'); return }
+    if (!chamado) return
+    setAdicionandoNota(true)
+    const { error } = await supabase.from('chamado_historico').insert({
+      chamado_id: chamado.id,
+      status_anterior: chamado.status,
+      status_novo: chamado.status,
+      observacao: observacao.trim(),
+      admin_id: adminId
+    })
+    if (error) { alert('Erro ao adicionar nota: ' + error.message); setAdicionandoNota(false); return }
+    await supabase.from('notificacoes').insert({
+      titulo: `Nova observacao — ${chamado.codigo_unico}`,
+      mensagem: `${adminNome} adicionou uma observacao no chamado ${chamado.codigo_unico}: "${observacao.trim()}"`,
+      lido: false,
+      destinatario_nivel: 'gestor'
+    })
+    setObservacao('')
+    await carregarChamado(chamado.id, adminId!, adminNome)
+    setAdicionandoNota(false)
+  }
+
   if (!chamado) return (
     <div className='flex items-center justify-center min-h-screen bg-[#f8f7f7]'>
       <div className='text-center'>
-        <div className='bg-[#767171] rounded-xl w-16 h-16 flex items-center justify-center mx-auto mb-4'>
+        <div className='bg-[#604404] rounded-xl w-16 h-16 flex items-center justify-center mx-auto mb-4'>
           <span className='text-white font-black text-xl'>AS</span>
         </div>
         <p className='text-[#6b7280]'>Carregando...</p>
@@ -188,7 +227,7 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
           <button onClick={() => router.push('/admin')} className='flex items-center gap-2 text-[#6b7280] hover:text-[#1a1a1a] transition-all duration-200'>
             <span className='text-sm font-medium'>← Voltar ao painel</span>
           </button>
-          <div className='bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center'>
+          <div className='bg-[#604404] rounded-xl w-12 h-12 flex items-center justify-center'>
             <span className='text-white font-black text-lg'>AS</span>
           </div>
         </div>
@@ -218,7 +257,7 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
 
               {salaNome && (
                 <div className='flex items-center gap-2 mb-4'>
-                  <div className='w-2 h-2 rounded-full bg-[#767171]'></div>
+                  <div className='w-2 h-2 rounded-full bg-[#604404]'></div>
                   <p className='text-sm text-[#6b7280]'>Sala: <span className='font-medium text-[#1a1a1a]'>{salaNome}</span></p>
                 </div>
               )}
@@ -239,7 +278,7 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
               {!isResponsavel && (
                 <button
                   onClick={pegarChamado}
-                  className='w-full mt-6 bg-[#767171] hover:bg-[#5a5555] text-white font-medium py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2'
+                  className='w-full mt-6 bg-[#604404] hover:bg-[#4a3203] text-white font-medium py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2'
                 >
                   <UserCheck size={18} />
                   Pegar Chamado
@@ -287,8 +326,8 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
                     onClick={() => setNovoStatus(s)}
                     className={`py-3 px-4 rounded-lg border text-sm font-medium transition-all duration-200 ${
                       novoStatus === s
-                        ? 'bg-[#767171] border-[#767171] text-white'
-                        : 'bg-white border-[#e5e3e3] text-[#1a1a1a] hover:border-[#767171]'
+                        ? 'bg-[#604404] border-[#604404] text-white'
+                        : 'bg-white border-[#e5e3e3] text-[#1a1a1a] hover:border-[#604404]'
                     }`}
                   >
                     {statusLabel[s]}
@@ -299,7 +338,7 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
               <div className='mb-6'>
                 <label className='block text-xs uppercase tracking-wider text-[#6b7280] mb-2'>Observação (opcional)</label>
                 <textarea
-                  className='w-full border border-[#e5e3e3] rounded-lg p-4 text-sm text-[#1a1a1a] min-h-24 focus:outline-none focus:border-[#767171] focus:ring-1 focus:ring-[#767171] transition-all duration-200'
+                  className='w-full border border-[#e5e3e3] rounded-lg p-4 text-sm text-[#1a1a1a] min-h-24 focus:outline-none focus:border-[#604404] focus:ring-1 focus:ring-[#604404] transition-all duration-200'
                   placeholder='Adicione uma observação...'
                   value={observacao}
                   onChange={e => setObservacao(e.target.value)}
@@ -312,14 +351,14 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
                   type='file'
                   accept='image/*'
                   onChange={selecionarFoto}
-                  className='w-full border border-[#e5e3e3] rounded-lg p-4 text-sm text-[#6b7280] focus:outline-none focus:border-[#767171] focus:ring-1 focus:ring-[#767171] transition-all duration-200'
+                  className='w-full border border-[#e5e3e3] rounded-lg p-4 text-sm text-[#6b7280] focus:outline-none focus:border-[#604404] focus:ring-1 focus:ring-[#604404] transition-all duration-200'
                 />
                 {(fotoEditada || fotoPreview) && (
                   <div className='relative mt-4'>
                     <img src={fotoEditada || fotoPreview} alt='Preview' className='w-full rounded-lg max-h-48 object-cover border border-[#e5e3e3]' />
                     <button
                       onClick={() => setAbrirEditor(true)}
-                      className='absolute bottom-3 right-3 bg-[#767171] hover:bg-[#5a5555] text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200'
+                      className='absolute bottom-3 right-3 bg-[#604404] hover:bg-[#4a3203] text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200'
                     >
                       Editar Foto
                     </button>
@@ -327,13 +366,23 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
                 )}
               </div>
 
-              <button
-                onClick={salvar}
-                disabled={salvando}
-                className='w-full bg-[#767171] hover:bg-[#5a5555] text-white font-medium py-3 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
-              >
-                {salvando ? 'Salvando...' : 'Salvar Alterações'}
-              </button>
+              <div className='flex flex-col gap-3'>
+                <button
+                  onClick={salvar}
+                  disabled={salvando || adicionandoNota}
+                  className='w-full bg-[#604404] hover:bg-[#4a3203] text-white font-medium py-3 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
+                >
+                  {salvando ? 'Salvando...' : 'Salvar Status'}
+                </button>
+                <button
+                  onClick={adicionarNota}
+                  disabled={adicionandoNota || salvando || !observacao.trim()}
+                  className='w-full bg-white border border-[#604404] text-[#604404] hover:bg-[#fdf8f0] font-medium py-3 rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2'
+                >
+                  <MessageSquare size={16} />
+                  {adicionandoNota ? 'Adicionando...' : 'Adicionar Nota'}
+                </button>
+              </div>
             </div>
 
             {/* Histórico */}
@@ -342,19 +391,30 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
               <div className='space-y-6'>
                 {historico.map((h, index) => {
                   const isLast = index === historico.length - 1
+                  const isNota = h.status_anterior === h.status_novo
                   return (
                     <div key={h.id} className='flex items-start gap-4 relative'>
                       {!isLast && (
                         <div className='absolute left-2 top-6 w-0.5 h-full bg-[#e5e3e3]'></div>
                       )}
-                      <div className='w-4 h-4 rounded-full bg-[#767171] mt-0.5 flex-shrink-0'></div>
+                      <div className={`w-4 h-4 rounded-full mt-0.5 flex-shrink-0 flex items-center justify-center ${isNota ? 'bg-blue-400' : 'bg-[#604404]'}`}>
+                        {isNota && <MessageSquare size={9} className='text-white' />}
+                      </div>
                       <div className='flex-1'>
                         <div className='flex justify-between items-start mb-2'>
-                          <p className='text-sm font-medium text-[#1a1a1a]'>{statusLabel[h.status_novo]}</p>
+                          {isNota ? (
+                            <p className='text-sm font-medium text-blue-600'>Nota</p>
+                          ) : (
+                            <p className='text-sm font-medium text-[#1a1a1a] flex items-center gap-1'>
+                              {statusLabel[h.status_anterior]}
+                              <ArrowRight size={12} className='text-[#6b7280]' />
+                              {statusLabel[h.status_novo]}
+                            </p>
+                          )}
                           <p className='text-xs text-[#6b7280]'>{new Date(h.criado_em).toLocaleString('pt-BR')}</p>
                         </div>
                         {h.observacao && (
-                          <p className='text-xs text-[#6b7280] bg-[#f5f4f4] rounded-lg p-3'>{h.observacao}</p>
+                          <p className='text-xs text-[#1a1a1a] bg-[#fdf8f0] rounded-lg p-3 leading-relaxed'>{h.observacao}</p>
                         )}
                       </div>
                     </div>

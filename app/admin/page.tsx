@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
@@ -26,17 +26,24 @@ export default function AdminPage() {
   const [filtroUrgencia, setFiltroUrgencia] = useState('')
   const [carregando, setCarregando] = useState(true)
   const [nivel, setNivel] = useState('')
+  const [adminNome, setAdminNome] = useState('')
   const [notificacoesNaoLidas, setNotificacoesNaoLidas] = useState(0)
 
   useEffect(() => {
-    setNivel(localStorage.getItem('admin_nivel') || '')
+    const nivelAtual = localStorage.getItem('admin_nivel') || ''
+    setNivel(nivelAtual)
+    setAdminNome(localStorage.getItem('admin_nome') || '')
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) { router.push('/admin/login'); return }
       carregarChamados()
-      if (localStorage.getItem('admin_nivel') === 'gestor') {
-        carregarNotificacoes()
-      }
+      if (nivelAtual === 'gestor') carregarNotificacoes()
     })
+
+    let intervalo: ReturnType<typeof setInterval> | null = null
+    if (localStorage.getItem('admin_nivel') === 'gestor') {
+      intervalo = setInterval(carregarNotificacoes, 30000)
+    }
+    return () => { if (intervalo) clearInterval(intervalo) }
   }, [])
 
   async function carregarChamados() {
@@ -91,7 +98,7 @@ export default function AdminPage() {
       {/* Sidebar */}
       <aside className='fixed left-0 top-0 z-10 w-20 h-screen bg-[#2c2c2c] flex flex-col items-center justify-between py-6 flex-shrink-0'>
         <div className='flex flex-col items-center gap-1'>
-          <div className='bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center'>
+          <div className='bg-[#604404] rounded-xl w-12 h-12 flex items-center justify-center'>
             <Wrench size={22} className='text-white' />
           </div>
           <span className='text-white text-xs font-bold mt-1'>A.S</span>
@@ -101,7 +108,7 @@ export default function AdminPage() {
             <>
               <div className='w-8 h-px bg-[#6b7280]'></div>
               <Link href='/admin/notificacoes' className='flex flex-col items-center gap-1 group relative'>
-                <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition-all duration-200 relative'>
+                <div className='bg-gray-700 group-hover:bg-[#604404] rounded-xl w-12 h-12 flex items-center justify-center transition-all duration-200 relative'>
                   <Bell size={20} className='text-white transition-all duration-200' />
                   {notificacoesNaoLidas > 0 && (
                     <span className='absolute -top-1 -right-1 bg-[#dc2626] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium'>
@@ -109,25 +116,25 @@ export default function AdminPage() {
                     </span>
                   )}
                 </div>
-                <span className='text-gray-400 text-xs group-hover:text-[#767171] transition-all duration-200 text-center leading-tight'>Notific.</span>
+                <span className='text-gray-400 text-xs group-hover:text-[#604404] transition-all duration-200 text-center leading-tight'>Notific.</span>
               </Link>
               <Link href='/admin/usuarios' className='flex flex-col items-center gap-1 group'>
-                <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition-all duration-200'>
+                <div className='bg-gray-700 group-hover:bg-[#604404] rounded-xl w-12 h-12 flex items-center justify-center transition-all duration-200'>
                   <Users size={20} className='text-white transition-all duration-200' />
                 </div>
-                <span className='text-gray-400 text-xs group-hover:text-[#767171] transition-all duration-200 text-center leading-tight'>Usuários</span>
+                <span className='text-gray-400 text-xs group-hover:text-[#604404] transition-all duration-200 text-center leading-tight'>Usuários</span>
               </Link>
               <Link href='/admin/qrcodes' className='flex flex-col items-center gap-1 group'>
-                <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition-all duration-200'>
+                <div className='bg-gray-700 group-hover:bg-[#604404] rounded-xl w-12 h-12 flex items-center justify-center transition-all duration-200'>
                   <QrCode size={20} className='text-white transition-all duration-200' />
                 </div>
-                <span className='text-gray-400 text-xs group-hover:text-[#767171] transition-all duration-200 text-center leading-tight'>QR Codes</span>
+                <span className='text-gray-400 text-xs group-hover:text-[#604404] transition-all duration-200 text-center leading-tight'>QR Codes</span>
               </Link>
               <Link href='/admin/relatorios' className='flex flex-col items-center gap-1 group'>
-                <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition-all duration-200'>
+                <div className='bg-gray-700 group-hover:bg-[#604404] rounded-xl w-12 h-12 flex items-center justify-center transition-all duration-200'>
                   <BarChart2 size={20} className='text-white transition-all duration-200' />
                 </div>
-                <span className='text-gray-400 text-xs group-hover:text-[#767171] transition-all duration-200 text-center leading-tight'>Relatórios</span>
+                <span className='text-gray-400 text-xs group-hover:text-[#604404] transition-all duration-200 text-center leading-tight'>Relatórios</span>
               </Link>
             </>
           )}
@@ -153,10 +160,10 @@ export default function AdminPage() {
             </div>
             <div className='flex items-center gap-3'>
               <div className='text-right'>
-                <p className='text-sm font-medium text-[#1a1a1a]'>{localStorage.getItem('admin_nome') || 'Usuário'}</p>
+                <p className='text-sm font-medium text-[#1a1a1a]'>{adminNome || 'Usuário'}</p>
                 <p className='text-xs text-[#6b7280] capitalize'>{nivel}</p>
               </div>
-              <div className='bg-[#767171] rounded-xl w-10 h-10 flex items-center justify-center'>
+              <div className='bg-[#604404] rounded-xl w-10 h-10 flex items-center justify-center'>
                 <User size={20} className='text-white' />
               </div>
             </div>
@@ -168,8 +175,8 @@ export default function AdminPage() {
           <div className='grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8'>
             <div className='bg-white rounded-xl shadow-sm p-6'>
               <div className='flex items-center gap-3 mb-3'>
-                <div className='bg-[#767171]/10 rounded-lg p-2'>
-                  <FileText size={24} className='text-[#767171]' />
+                <div className='bg-[#604404]/10 rounded-lg p-2'>
+                  <FileText size={24} className='text-[#604404]' />
                 </div>
                 <div>
                   <p className='text-xs uppercase tracking-wider text-[#6b7280]'>Total de Chamados</p>
@@ -179,12 +186,12 @@ export default function AdminPage() {
             </div>
             <div className='bg-white rounded-xl shadow-sm p-6'>
               <div className='flex items-center gap-3 mb-3'>
-                <div className='bg-[#767171]/10 rounded-lg p-2'>
-                  <Clock size={24} className='text-[#767171]' />
+                <div className='bg-[#604404]/10 rounded-lg p-2'>
+                  <Clock size={24} className='text-[#604404]' />
                 </div>
                 <div>
                   <p className='text-xs uppercase tracking-wider text-[#6b7280]'>Em Aberto</p>
-                  <p className='text-3xl font-black text-[#767171]'>{emAberto}</p>
+                  <p className='text-3xl font-black text-[#604404]'>{emAberto}</p>
                 </div>
               </div>
             </div>
@@ -208,7 +215,7 @@ export default function AdminPage() {
               <select
                 value={filtroStatus}
                 onChange={e => setFiltroStatus(e.target.value)}
-                className='border border-[#e5e3e3] rounded-lg px-4 py-3 text-sm text-[#1a1a1a] focus:outline-none focus:border-[#767171] focus:ring-1 focus:ring-[#767171] transition-all duration-200 bg-white'
+                className='border border-[#e5e3e3] rounded-lg px-4 py-3 text-sm text-[#1a1a1a] focus:outline-none focus:border-[#604404] focus:ring-1 focus:ring-[#604404] transition-all duration-200 bg-white'
               >
                 <option value=''>Todos os status</option>
                 {Object.entries(statusLabel).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
@@ -219,14 +226,14 @@ export default function AdminPage() {
               <select
                 value={filtroUrgencia}
                 onChange={e => setFiltroUrgencia(e.target.value)}
-                className='border border-[#e5e3e3] rounded-lg px-4 py-3 text-sm text-[#1a1a1a] focus:outline-none focus:border-[#767171] focus:ring-1 focus:ring-[#767171] transition-all duration-200 bg-white'
+                className='border border-[#e5e3e3] rounded-lg px-4 py-3 text-sm text-[#1a1a1a] focus:outline-none focus:border-[#604404] focus:ring-1 focus:ring-[#604404] transition-all duration-200 bg-white'
               >
                 <option value=''>Todas as urgências</option>
                 {Object.entries(urgenciaLabel).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
             </div>
             <div className='flex items-end'>
-              <span className='text-sm text-[#6b7280] bg-[#f5f4f4] px-4 py-3 rounded-lg'>{filtrados.length} chamados</span>
+              <span className='text-sm text-[#6b7280] bg-[#fdf8f0] px-4 py-3 rounded-lg'>{filtrados.length} chamados</span>
             </div>
           </div>
         </div>
@@ -239,7 +246,7 @@ export default function AdminPage() {
               <Link
                 key={c.id}
                 href={'/admin/chamado/' + c.id}
-                className='bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-all duration-200 block border border-transparent hover:border-[#767171]/20'
+                className='bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-all duration-200 block border border-transparent hover:border-[#604404]/20'
               >
                 <div className='flex justify-between items-start mb-4'>
                   <div>
@@ -252,9 +259,9 @@ export default function AdminPage() {
                 </div>
                 <p className='text-sm text-[#6b7280] mb-4 line-clamp-2'>{c.descricao}</p>
                 <div className='flex justify-between items-center'>
-                  <span className='text-xs bg-[#f5f4f4] text-[#6b7280] px-3 py-1.5 rounded-lg font-medium'>{statusLabel[c.status as keyof typeof statusLabel]}</span>
+                  <span className='text-xs bg-[#fdf8f0] text-[#6b7280] px-3 py-1.5 rounded-lg font-medium'>{statusLabel[c.status as keyof typeof statusLabel]}</span>
                   <div className='flex items-center gap-4 text-xs text-[#6b7280]'>
-                    <span className={c.responsavel_nome ? 'text-[#767171] font-medium' : ''}>
+                    <span className={c.responsavel_nome ? 'text-[#604404] font-medium' : ''}>
                       {c.responsavel_nome || 'Sem responsável'}
                     </span>
                     <span>{new Date(c.criado_em).toLocaleDateString('pt-BR')}</span>

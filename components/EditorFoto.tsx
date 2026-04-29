@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useRef, useState, useEffect } from 'react'
 import { Pen, ArrowRight, Square, Type, Palette, Minus, Plus } from 'lucide-react'
 
@@ -147,7 +147,7 @@ export default function EditorFoto({ onSalvar, onCancelar, imagemInicial }: Prop
         </div>
 
         {/* Toolbar */}
-        <div className='flex items-center gap-4 p-6 border-b border-[#e5e3e3] bg-[#f5f4f4]'>
+        <div className='flex items-center gap-4 p-6 border-b border-[#e5e3e3] bg-[#fdf8f0]'>
           <div className='flex items-center gap-2'>
             {ferramentas.map(f => {
               const Icon = f.icon
@@ -157,7 +157,7 @@ export default function EditorFoto({ onSalvar, onCancelar, imagemInicial }: Prop
                   onClick={() => setFerramenta(f.id as Ferramenta)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     ferramenta === f.id
-                      ? 'bg-[#767171] text-white'
+                      ? 'bg-[#604404] text-white'
                       : 'bg-white text-[#1a1a1a] hover:bg-[#e5e3e3]'
                   }`}
                 >
@@ -201,7 +201,7 @@ export default function EditorFoto({ onSalvar, onCancelar, imagemInicial }: Prop
         {ferramenta === 'texto' && posTexto && (
           <div className='flex gap-3 p-6 border-b border-[#e5e3e3]'>
             <input
-              className='flex-1 border border-[#e5e3e3] rounded-lg px-4 py-3 text-sm text-[#1a1a1a] focus:outline-none focus:border-[#767171] focus:ring-1 focus:ring-[#767171] transition-all duration-200'
+              className='flex-1 border border-[#e5e3e3] rounded-lg px-4 py-3 text-sm text-[#1a1a1a] focus:outline-none focus:border-[#604404] focus:ring-1 focus:ring-[#604404] transition-all duration-200'
               placeholder='Digite o texto...'
               value={texto}
               onChange={e => setTexto(e.target.value)}
@@ -210,7 +210,7 @@ export default function EditorFoto({ onSalvar, onCancelar, imagemInicial }: Prop
             />
             <button
               onClick={adicionarTexto}
-              className='bg-[#767171] hover:bg-[#5a5555] text-white font-medium px-6 py-3 rounded-lg transition-all duration-200'
+              className='bg-[#604404] hover:bg-[#4a3203] text-white font-medium px-6 py-3 rounded-lg transition-all duration-200'
             >
               Adicionar
             </button>
@@ -243,13 +243,13 @@ export default function EditorFoto({ onSalvar, onCancelar, imagemInicial }: Prop
         <div className='flex gap-3 p-6 border-t border-[#e5e3e3]'>
           <button
             onClick={onCancelar}
-            className='flex-1 border border-[#e5e3e3] text-[#6b7280] hover:bg-[#f5f4f4] font-medium py-3 rounded-lg transition-all duration-200'
+            className='flex-1 border border-[#e5e3e3] text-[#6b7280] hover:bg-[#fdf8f0] font-medium py-3 rounded-lg transition-all duration-200'
           >
             Cancelar
           </button>
           <button
             onClick={salvar}
-            className='flex-1 bg-[#767171] hover:bg-[#5a5555] text-white font-medium py-3 rounded-lg transition-all duration-200'
+            className='flex-1 bg-[#604404] hover:bg-[#4a3203] text-white font-medium py-3 rounded-lg transition-all duration-200'
           >
             Salvar Foto
           </button>

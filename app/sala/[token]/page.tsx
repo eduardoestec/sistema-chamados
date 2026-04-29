@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 import Image from 'next/image'
 import { Wrench, Search, MapPin } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
@@ -29,17 +29,17 @@ export default async function SalaPage({ params }: Props) {
       <aside className='w-20 bg-[#2c2c2c] flex flex-col items-center justify-between py-6 flex-shrink-0'>
 
         <Link href='/admin/login' className='flex flex-col items-center gap-1 group'>
-          <div className='bg-[#767171] group-hover:bg-[#5a5555] rounded-xl w-12 h-12 flex items-center justify-center transition-all duration-200'>
+          <div className='bg-[#604404] group-hover:bg-[#4a3203] rounded-xl w-12 h-12 flex items-center justify-center transition-all duration-200'>
             <Wrench size={24} className='text-white' />
           </div>
           <span className='text-white text-xs font-bold mt-1'>Admin</span>
         </Link>
 
         <Link href='/acompanhar' className='flex flex-col items-center gap-1 group'>
-          <div className='bg-gray-700 group-hover:bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center transition-all duration-200'>
+          <div className='bg-gray-700 group-hover:bg-[#604404] rounded-xl w-12 h-12 flex items-center justify-center transition-all duration-200'>
             <Search size={20} className='text-white transition-all duration-200' />
           </div>
-          <span className='text-gray-400 text-xs group-hover:text-[#767171] transition-all duration-200 text-center leading-tight'>Acompanhar</span>
+          <span className='text-gray-400 text-xs group-hover:text-[#604404] transition-all duration-200 text-center leading-tight'>Acompanhar</span>
         </Link>
 
       </aside>
@@ -66,7 +66,7 @@ export default async function SalaPage({ params }: Props) {
             </div>
 
             {sala ? (
-              <div className='bg-[#f5f4f4] rounded-xl p-4'>
+              <div className='bg-[#fdf8f0] rounded-xl p-4'>
                 <div className='flex items-center gap-3'>
                   <div className='w-3 h-3 rounded-full bg-[#16a34a]'></div>
                   <div>
@@ -95,7 +95,7 @@ export default async function SalaPage({ params }: Props) {
             {sala ? (
               <Link
                 href={'/novo-chamado?sala_id=' + sala.id + '&sala_nome=' + encodeURIComponent(sala.nome)}
-                className='block w-full bg-[#767171] hover:bg-[#5a5555] text-white font-medium py-4 rounded-lg text-center text-base transition-all duration-200'
+                className='block w-full bg-[#604404] hover:bg-[#4a3203] text-white font-medium py-4 rounded-lg text-center text-base transition-all duration-200'
               >
                 Novo Chamado
               </Link>

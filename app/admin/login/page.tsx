@@ -1,9 +1,10 @@
-'use client'
+﻿'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
-import { User, Lock } from 'lucide-react'
+import { User, Lock, ArrowLeft } from 'lucide-react'
 import Image from 'next/image'
+import Link from 'next/link'
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,9 +21,10 @@ export default function LoginPage() {
   async function entrar() {
     setEntrando(true)
     setErro('')
-    const emailCompleto = email + '@as-engenharia.com'
+    const emailCompleto = email + '@' + (process.env.NEXT_PUBLIC_EMAIL_DOMAIN || 'as-engenharia.com')
+    console.log('Tentando login com:', emailCompleto)
     const { data: authData, error } = await supabase.auth.signInWithPassword({ email: emailCompleto, password: senha })
-    if (error) { setErro('Usuario ou senha incorretos'); setEntrando(false); return }
+    if (error) { console.log('Erro:', error); setErro('Usuario ou senha incorretos'); setEntrando(false); return }
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
@@ -47,6 +49,12 @@ export default function LoginPage() {
 
   return (
     <main className='min-h-screen bg-[#f8f7f7] flex items-center justify-center p-6'>
+      <div className='absolute top-6 left-6'>
+        <Link href='/' className='flex items-center gap-2 text-gray-500 hover:text-gray-800 transition-colors duration-200 text-sm font-medium'>
+          <ArrowLeft size={18} />
+          Voltar
+        </Link>
+      </div>
       <div className='bg-white rounded-xl shadow-sm p-8 w-full max-w-md'>
         <div className='text-center mb-8'>
           <div className='flex justify-center mb-4'>
@@ -71,7 +79,7 @@ export default function LoginPage() {
                 type='text'
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className='w-full border border-[#e5e3e3] rounded-lg pl-10 pr-4 py-3 text-sm text-[#1a1a1a] focus:outline-none focus:border-[#767171] focus:ring-1 focus:ring-[#767171] transition-all duration-200'
+                className='w-full border border-[#e5e3e3] rounded-lg pl-10 pr-4 py-3 text-sm text-[#1a1a1a] focus:outline-none focus:border-[#604404] focus:ring-1 focus:ring-[#604404] transition-all duration-200'
                 placeholder='nome.sobrenome'
               />
             </div>
@@ -86,7 +94,7 @@ export default function LoginPage() {
                 value={senha}
                 onChange={e => setSenha(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && entrar()}
-                className='w-full border border-[#e5e3e3] rounded-lg pl-10 pr-4 py-3 text-sm text-[#1a1a1a] focus:outline-none focus:border-[#767171] focus:ring-1 focus:ring-[#767171] transition-all duration-200'
+                className='w-full border border-[#e5e3e3] rounded-lg pl-10 pr-4 py-3 text-sm text-[#1a1a1a] focus:outline-none focus:border-[#604404] focus:ring-1 focus:ring-[#604404] transition-all duration-200'
                 placeholder='••••••••'
               />
             </div>
@@ -101,7 +109,7 @@ export default function LoginPage() {
           <button
             onClick={entrar}
             disabled={entrando}
-            className='w-full bg-[#767171] hover:bg-[#5a5555] text-white font-medium py-3 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
+            className='w-full bg-[#604404] hover:bg-[#4a3203] text-white font-medium py-3 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
           >
             {entrando ? 'Entrando...' : 'Entrar'}
           </button>

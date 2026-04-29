@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
@@ -35,7 +35,7 @@ function PlacaQR({ sala, onExcluir }: { sala: Sala; onExcluir: (id: string) => v
     <div className='flex flex-col items-center gap-2'>
       <div className='bg-white border-4 border-gray-900 rounded-2xl p-6 flex flex-col items-center w-56 print-card'>
         <div className='flex items-center gap-2 mb-3'>
-          <div className='bg-[#767171] rounded-lg w-7 h-7 flex items-center justify-center'>
+          <div className='bg-[#604404] rounded-lg w-7 h-7 flex items-center justify-center'>
             <span className='text-white font-black text-xs'>AS</span>
           </div>
           <span className='text-gray-800 font-bold text-sm'>Manutencao</span>
@@ -85,7 +85,7 @@ function ModalNovaSala({ onSalvar, onFechar }: { onSalvar: (nome: string, locali
           <input
             value={nome}
             onChange={e => setNome(e.target.value)}
-            className='w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#767171]'
+            className='w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#604404]'
             placeholder='Ex: Sala de Reuniao'
           />
         </div>
@@ -94,7 +94,7 @@ function ModalNovaSala({ onSalvar, onFechar }: { onSalvar: (nome: string, locali
           <input
             value={localizacao}
             onChange={e => setLocalizacao(e.target.value)}
-            className='w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#767171]'
+            className='w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#604404]'
             placeholder='Ex: 2° andar, bloco B'
           />
         </div>
@@ -102,7 +102,7 @@ function ModalNovaSala({ onSalvar, onFechar }: { onSalvar: (nome: string, locali
         <button
           onClick={handleConfirmar}
           disabled={salvando || !nome.trim()}
-          className='w-full bg-[#767171] hover:bg-[#5a5555] text-white font-bold py-3 rounded-xl transition disabled:opacity-50'
+          className='w-full bg-[#604404] hover:bg-[#4a3203] text-white font-bold py-3 rounded-xl transition disabled:opacity-50'
         >
           {salvando ? 'Criando...' : 'Confirmar'}
         </button>
@@ -116,6 +116,7 @@ export default function QRCodesPage() {
   const [salas, setSalas] = useState<Sala[]>([])
   const [carregando, setCarregando] = useState(true)
   const [modalNova, setModalNova] = useState(false)
+  const [erroExclusao, setErroExclusao] = useState('')
 
   useEffect(() => {
     if (localStorage.getItem('admin_nivel') !== 'gestor') { router.push('/admin'); return }
@@ -152,8 +153,27 @@ export default function QRCodesPage() {
     return null
   }
 
+  function mostrarErro(msg: string) {
+    setErroExclusao(msg)
+    setTimeout(() => setErroExclusao(''), 5000)
+  }
+
   async function excluirSala(id: string) {
-    await supabase.from('salas').delete().eq('id', id)
+    const { count } = await supabase
+      .from('chamados')
+      .select('*', { count: 'exact', head: true })
+      .eq('sala_id', id)
+
+    if (count && count > 0) {
+      mostrarErro(`Não é possível excluir esta sala. Existem ${count} chamado${count > 1 ? 's' : ''} vinculado${count > 1 ? 's' : ''} a ela.`)
+      return
+    }
+
+    const { error } = await supabase.from('salas').delete().eq('id', id)
+    if (error) {
+      mostrarErro('Erro ao excluir sala: ' + error.message)
+      return
+    }
     carregarSalas()
   }
 
@@ -170,18 +190,24 @@ export default function QRCodesPage() {
         <div className='flex gap-2'>
           <button
             onClick={() => setModalNova(true)}
-            className='flex items-center gap-2 border border-gray-200 hover:border-[#767171] text-gray-700 font-bold px-4 py-3 rounded-xl transition'
+            className='flex items-center gap-2 border border-gray-200 hover:border-[#604404] text-gray-700 font-bold px-4 py-3 rounded-xl transition'
           >
             <Plus size={16} /> Nova Sala
           </button>
           <button
             onClick={() => window.print()}
-            className='bg-[#767171] hover:bg-[#5a5555] text-white font-bold px-6 py-3 rounded-xl transition'
+            className='bg-[#604404] hover:bg-[#4a3203] text-white font-bold px-6 py-3 rounded-xl transition'
           >
             Imprimir Todos
           </button>
         </div>
       </div>
+
+      {erroExclusao && (
+        <div className='print-hide mb-6 bg-red-50 border border-red-200 text-red-700 text-sm font-medium px-4 py-3 rounded-xl'>
+          {erroExclusao}
+        </div>
+      )}
 
       {carregando && <p className='text-gray-400 text-sm'>Carregando...</p>}
       {!carregando && salas.length === 0 && (

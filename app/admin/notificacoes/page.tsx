@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
@@ -60,12 +60,12 @@ export default function NotificacoesPage() {
       {carregando && <p className='text-gray-400 text-sm'>Carregando...</p>}
       <div className='flex flex-col gap-3'>
         {notificacoes.map(n => (
-          <div key={n.id} className={`bg-white rounded-2xl shadow p-4 ${!n.lido ? 'border-l-4 border-[#767171]' : ''}`}>
+          <div key={n.id} className={`bg-white rounded-2xl shadow p-4 ${!n.lido ? 'border-l-4 border-[#604404]' : ''}`}>
             <div className='flex justify-between items-start mb-2'>
               <h3 className='font-semibold text-gray-800'>{n.titulo}</h3>
               {!n.lido && (
                 <button onClick={() => marcarComoLida(n.id)}
-                  className='text-xs bg-[#767171] hover:bg-[#5a5555] text-white px-2 py-1 rounded-lg'>
+                  className='text-xs bg-[#604404] hover:bg-[#4a3203] text-white px-2 py-1 rounded-lg'>
                   Marcar como lida
                 </button>
               )}

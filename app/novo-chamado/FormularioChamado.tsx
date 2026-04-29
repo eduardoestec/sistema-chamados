@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import EditorFoto from '@/components/EditorFoto'
@@ -33,6 +33,7 @@ export default function FormularioChamado() {
   const [fotoPreview, setFotoPreview] = useState('')
   const [fotoEditada, setFotoEditada] = useState('')
   const [abrirEditor, setAbrirEditor] = useState(false)
+  const [erroFoto, setErroFoto] = useState(false)
 
   const tipos = ['Eletrica','Hidraulica','Iluminacao','Mobiliario','Equipamentos','Infraestrutura','Outros']
   const urgencias = ['baixa','media','alta','muito_alta']
@@ -45,12 +46,14 @@ export default function FormularioChamado() {
     reader.onload = () => {
       setFotoPreview(reader.result as string)
       setFotoEditada('')
+      setErroFoto(false)
     }
     reader.readAsDataURL(file)
   }
 
   async function enviar() {
     if (!tipo || !descricao || !urgencia) { alert('Preencha todos os campos'); return }
+    if (!fotoPreview && !fotoEditada) { setErroFoto(true); return }
     setEnviando(true)
     try {
       const res = await fetch('/api/chamados', {
@@ -75,7 +78,7 @@ export default function FormularioChamado() {
             <ArrowLeft size={20} />
             <span className='text-sm font-medium'>Voltar</span>
           </button>
-          <div className='bg-[#767171] rounded-xl w-12 h-12 flex items-center justify-center'>
+          <div className='bg-[#604404] rounded-xl w-12 h-12 flex items-center justify-center'>
             <span className='text-white font-black text-lg'>AS</span>
           </div>
         </div>
@@ -89,7 +92,7 @@ export default function FormularioChamado() {
           <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
             {tipos.map(t => (
               <button key={t} onClick={() => setTipo(t)}
-                className={`flex items-center gap-3 py-4 px-4 rounded-lg border text-sm font-medium transition-all duration-200 min-h-[44px] cursor-pointer relative z-10 ${tipo === t ? 'bg-[#767171] border-[#767171] text-white' : 'bg-white border-[#e5e3e3] text-[#1a1a1a] hover:border-[#767171]'}`}>
+                className={`flex items-center gap-3 py-4 px-4 rounded-lg border text-sm font-medium transition-all duration-200 min-h-[44px] cursor-pointer relative z-10 ${tipo === t ? 'bg-[#604404] border-[#604404] text-white' : 'bg-white border-[#e5e3e3] text-[#1a1a1a] hover:border-[#604404]'}`}>
                 <span className={tipo === t ? 'text-white' : 'text-[#6b7280]'}>{tipoIcons[t]}</span>
                 {t}
               </button>
@@ -101,7 +104,7 @@ export default function FormularioChamado() {
         <div className='bg-white rounded-xl shadow-sm p-6 mb-6'>
           <label className='block text-xs uppercase tracking-wider text-[#6b7280] mb-3'>Descrição</label>
           <textarea
-            className='w-full border border-[#e5e3e3] rounded-lg p-4 text-sm text-[#1a1a1a] min-h-32 focus:outline-none focus:border-[#767171] focus:ring-1 focus:ring-[#767171] transition-all duration-200'
+            className='w-full border border-[#e5e3e3] rounded-lg p-4 text-sm text-[#1a1a1a] min-h-32 focus:outline-none focus:border-[#604404] focus:ring-1 focus:ring-[#604404] transition-all duration-200'
             placeholder='Descreva o problema detalhadamente...'
             value={descricao}
             onChange={e => setDescricao(e.target.value)}
@@ -132,19 +135,24 @@ export default function FormularioChamado() {
 
         {/* Foto */}
         <div className='bg-white rounded-xl shadow-sm p-6 mb-8'>
-          <label className='block text-xs uppercase tracking-wider text-[#6b7280] mb-3'>Foto (opcional)</label>
+          <label className='block text-xs uppercase tracking-wider text-[#6b7280] mb-3'>
+            Foto <span className='text-red-500'>*</span>
+          </label>
           <input
             type='file'
             accept='image/*'
             onChange={selecionarFoto}
-            className='w-full border border-[#e5e3e3] rounded-lg p-4 text-sm text-[#6b7280] focus:outline-none focus:border-[#767171] focus:ring-1 focus:ring-[#767171] transition-all duration-200'
+            className={`w-full border rounded-lg p-4 text-sm text-[#6b7280] focus:outline-none transition-all duration-200 ${erroFoto ? 'border-red-500 ring-1 ring-red-500' : 'border-[#e5e3e3] focus:border-[#604404] focus:ring-1 focus:ring-[#604404]'}`}
           />
+          {erroFoto && (
+            <p className='mt-2 text-sm text-red-500 font-medium'>Foto obrigatória</p>
+          )}
           {(fotoEditada || fotoPreview) && (
             <div className='relative mt-4'>
               <img src={fotoEditada || fotoPreview} alt='Preview' className='w-full rounded-lg max-h-48 object-cover border border-[#e5e3e3]' />
               <button
                 onClick={() => setAbrirEditor(true)}
-                className='absolute bottom-3 right-3 bg-[#767171] hover:bg-[#5a5555] text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200'
+                className='absolute bottom-3 right-3 bg-[#604404] hover:bg-[#4a3203] text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200'
               >
                 Editar Foto
               </button>
@@ -156,7 +164,7 @@ export default function FormularioChamado() {
         <button
           onClick={enviar}
           disabled={enviando}
-          className='w-full bg-[#767171] hover:bg-[#5a5555] text-white font-medium py-4 rounded-lg text-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] cursor-pointer relative z-10'
+          className='w-full bg-[#604404] hover:bg-[#4a3203] text-white font-medium py-4 rounded-lg text-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] cursor-pointer relative z-10'
         >
           {enviando ? 'Enviando...' : 'Enviar Chamado'}
         </button>

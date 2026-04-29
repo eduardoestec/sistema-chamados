@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
@@ -9,7 +9,7 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-const CORES = ['#767171', '#05df72', '#fb2c36', '#6a7282', '#364153', '#fefce8', '#e5e7eb']
+const CORES = ['#604404', '#05df72', '#fb2c36', '#6a7282', '#364153', '#fefce8', '#e5e7eb']
 
 export default function RelatoriosPage() {
   const router = useRouter()
@@ -70,7 +70,7 @@ export default function RelatoriosPage() {
           <button onClick={() => router.push('/admin')} className='text-sm text-gray-500 hover:text-gray-800 border border-gray-200 px-4 py-2 rounded-xl'>
             Voltar
           </button>
-          <button onClick={exportarCSV} className='text-sm bg-[#767171] hover:bg-[#5a5555] text-white font-bold px-4 py-2 rounded-xl'>
+          <button onClick={exportarCSV} className='text-sm bg-[#604404] hover:bg-[#4a3203] text-white font-bold px-4 py-2 rounded-xl'>
             Exportar CSV
           </button>
         </div>
@@ -82,7 +82,7 @@ export default function RelatoriosPage() {
           <p className='text-sm text-gray-500'>Total de Chamados</p>
         </div>
         <div className='bg-white rounded-2xl shadow p-5 text-center'>
-          <p className='text-3xl font-black text-[#767171]'>{chamados.filter(c => c.status !== 'resolvido').length}</p>
+          <p className='text-3xl font-black text-[#604404]'>{chamados.filter(c => c.status !== 'resolvido').length}</p>
           <p className='text-sm text-gray-500'>Em Aberto</p>
         </div>
         <div className='bg-white rounded-2xl shadow p-5 text-center'>
@@ -110,7 +110,7 @@ export default function RelatoriosPage() {
               <XAxis dataKey='name' tick={{ fontSize: 10 }} />
               <YAxis />
               <Tooltip />
-              <Bar dataKey='value' fill='#767171' />
+              <Bar dataKey='value' fill='#604404' />
             </BarChart>
           </ResponsiveContainer>
         </div>
