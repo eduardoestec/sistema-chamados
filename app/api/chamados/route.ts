@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(data)
-  } catch (e) {
+  } catch {
     return NextResponse.json({ erro: 'Erro interno' }, { status: 500 })
   }
 }

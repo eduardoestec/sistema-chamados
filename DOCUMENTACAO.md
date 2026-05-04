@@ -1,4 +1,4 @@
-# Sistema de Chamados — A.S Engenharia
+# Sistema de Chamados — A.S 
 ## Documentação Técnica
 
 ---

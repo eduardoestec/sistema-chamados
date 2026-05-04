@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     // Criar usuário via Admin API
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: email + '@as-engenharia.com',
+      email: email + '@' + (process.env.NEXT_PUBLIC_EMAIL_DOMAIN || 'almeidasantos.com'),
       password: senha,
       email_confirm: true,
     })
