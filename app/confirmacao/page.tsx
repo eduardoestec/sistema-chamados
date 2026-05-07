@@ -7,7 +7,7 @@ import { ArrowLeft, Check } from 'lucide-react'
 function Confirmacao() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const codigo = searchParams.get('codigo')
+  const codigo = searchParams?.get('codigo')
   return (
     <main className='min-h-screen bg-[#f8f7f7] flex flex-col items-center justify-center p-6 text-center'>
       <div className='w-full max-w-md'>
