@@ -1,20 +1,14 @@
-﻿'use client'
+'use client'
 export const dynamic = 'force-dynamic'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
 import { User, Lock, ArrowLeft } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
 export default function LoginPage() {
   const router = useRouter()
-  const [email, setEmail] = useState('')
+  const [usuario, setUsuario] = useState('')
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
   const [entrando, setEntrando] = useState(false)
@@ -22,29 +16,16 @@ export default function LoginPage() {
   async function entrar() {
     setEntrando(true)
     setErro('')
-    const emailCompleto = email + '@' + (process.env.NEXT_PUBLIC_EMAIL_DOMAIN || 'as-engenharia.com')
-    console.log('Tentando login com:', emailCompleto)
-    const { data: authData, error } = await supabase.auth.signInWithPassword({ email: emailCompleto, password: senha })
-    if (error) { console.log('Erro:', error); setErro('Usuario ou senha incorretos'); setEntrando(false); return }
-
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('nivel, nome')
-      .eq('id', authData.user.id)
-      .single()
-
-    console.log('[login] user id:', authData.user.id)
-    console.log('[login] profile:', profile)
-    console.log('[login] profileError:', profileError)
-
-    if (profile) {
-      localStorage.setItem('admin_nivel', profile.nivel)
-      localStorage.setItem('admin_nome', profile.nome)
-    } else {
-      // Fallback: salva gestor se não conseguir buscar o perfil
-      localStorage.setItem('admin_nivel', 'gestor')
-      localStorage.setItem('admin_nome', authData.user.email?.split('@')[0] || '')
-    }
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario, senha })
+    })
+    const data = await res.json()
+    if (!res.ok) { setErro(data.erro || 'Usuário ou senha incorretos'); setEntrando(false); return }
+    localStorage.setItem('admin_id', data.id)
+    localStorage.setItem('admin_nome', data.nome)
+    localStorage.setItem('admin_nivel', data.nivel)
     router.push('/admin')
   }
 
@@ -78,8 +59,8 @@ export default function LoginPage() {
               <User size={18} className='absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6b7280]' />
               <input
                 type='text'
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                value={usuario}
+                onChange={e => setUsuario(e.target.value)}
                 className='w-full border border-[#e5e3e3] rounded-lg pl-10 pr-4 py-3 text-sm text-[#1a1a1a] focus:outline-none focus:border-[#604404] focus:ring-1 focus:ring-[#604404] transition-all duration-200'
                 placeholder='nome.sobrenome'
               />
