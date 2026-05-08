@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
-import { verificarToken, hashSenha } from '@/lib/auth'
+import { verificarToken } from '@/lib/auth'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const token = req.cookies.get('auth-token')?.value
   if (!token || !verificarToken(token)) {
     return NextResponse.json({ erro: 'Não autorizado' }, { status: 401 })
   }
-
   const { id } = await params
-  const { senha } = await req.json()
-
-  if (!id || !senha) {
-    return NextResponse.json({ erro: 'Campos obrigatórios faltando' }, { status: 400 })
-  }
-
-  const hash = await hashSenha(senha)
-  await query('UPDATE usuarios SET senha_hash = $1 WHERE id = $2', [hash, id])
+  await query('UPDATE notificacoes SET lido = true WHERE id = $1', [id])
   return NextResponse.json({ ok: true })
 }

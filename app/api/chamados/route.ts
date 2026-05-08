@@ -1,23 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-)
+import { query, queryOne } from '@/lib/db'
+import { verificarToken } from '@/lib/auth'
 
 async function gerarCodigo(): Promise<string> {
-  const { data } = await supabase
-    .from('chamados')
-    .select('codigo_unico')
-    .like('codigo_unico', 'AS-%')
-    .order('criado_em', { ascending: false })
-    .limit(1)
-    .single()
-
+  const row = await queryOne<{ codigo_unico: string }>(
+    "SELECT codigo_unico FROM chamados WHERE codigo_unico LIKE 'AS-%' ORDER BY criado_em DESC LIMIT 1"
+  )
   let proximo = 1
-  if (data?.codigo_unico) {
-    const num = parseInt((data.codigo_unico as string).replace('AS-', ''), 10)
+  if (row?.codigo_unico) {
+    const num = parseInt(row.codigo_unico.replace('AS-', ''), 10)
     if (!isNaN(num)) proximo = num + 1
   }
   return 'AS-' + String(proximo).padStart(4, '0')
@@ -34,54 +25,46 @@ export async function POST(req: NextRequest) {
 
     const codigo_unico = await gerarCodigo()
 
-    const { data, error } = await supabase
-      .from('chamados')
-      .insert({
-        codigo_unico,
-        tipo_problema,
-        descricao,
-        urgencia,
-        status: 'enviado',
-        sala_id: sala_id || null
-      })
-      .select()
-      .single()
+    const chamado = await queryOne<any>(
+      `INSERT INTO chamados (codigo_unico, tipo_problema, descricao, urgencia, status, sala_id)
+       VALUES ($1,$2,$3,$4,'enviado',$5) RETURNING *`,
+      [codigo_unico, tipo_problema, descricao, urgencia, sala_id || null]
+    )
 
-    if (error) {
-      console.error(error)
+    if (!chamado) {
       return NextResponse.json({ erro: 'Erro ao criar chamado' }, { status: 500 })
     }
 
-    await supabase.from('chamado_historico').insert({
-      chamado_id: data.id,
-      status_anterior: null,
-      status_novo: 'enviado',
-      observacao: 'Chamado criado pelo usuario'
-    })
+    await query(
+      `INSERT INTO chamado_historico (chamado_id, status_anterior, status_novo, observacao)
+       VALUES ($1,NULL,'enviado','Chamado criado pelo usuario')`,
+      [chamado.id]
+    )
 
     if (foto) {
-      await supabase.from('anexos').insert({
-        chamado_id: data.id,
-        url: foto,
-        tipo: 'usuario'
-      })
+      await query(
+        `INSERT INTO anexos (chamado_id, url, tipo) VALUES ($1,$2,'usuario')`,
+        [chamado.id, foto]
+      )
     }
 
-    return NextResponse.json(data)
+    return NextResponse.json(chamado)
   } catch {
     return NextResponse.json({ erro: 'Erro interno' }, { status: 500 })
   }
 }
 
-export async function GET() {
-  const { data, error } = await supabase
-    .from('chamados')
-    .select('*')
-    .order('criado_em', { ascending: false })
-
-  if (error) {
-    return NextResponse.json({ erro: 'Erro ao buscar chamados' }, { status: 500 })
+export async function GET(req: NextRequest) {
+  const token = req.cookies.get('auth-token')?.value
+  if (!token || !verificarToken(token)) {
+    return NextResponse.json({ erro: 'Não autorizado' }, { status: 401 })
   }
 
-  return NextResponse.json(data)
+  const chamados = await query<any>(`
+    SELECT c.*, u.nome AS responsavel_nome
+    FROM chamados c
+    LEFT JOIN usuarios u ON u.id = c.responsavel_id
+    ORDER BY c.criado_em DESC
+  `)
+  return NextResponse.json(chamados)
 }

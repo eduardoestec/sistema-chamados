@@ -1,14 +1,8 @@
-﻿'use client'
+'use client'
 export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
-import { ArrowLeft, Bell } from 'lucide-react'
-
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { ArrowLeft } from 'lucide-react'
 
 type Notificacao = {
   id: string
@@ -25,24 +19,21 @@ export default function NotificacoesPage() {
 
   useEffect(() => {
     if (localStorage.getItem('admin_nivel') !== 'gestor') { router.push('/admin'); return }
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) { router.push('/admin/login'); return }
-      carregarNotificacoes()
-    })
+    if (!localStorage.getItem('admin_id')) { router.push('/admin/login'); return }
+    carregarNotificacoes()
   }, [])
 
   async function carregarNotificacoes() {
     setCarregando(true)
-    const { data } = await supabase
-      .from('notificacoes')
-      .select('*')
-      .order('criado_em', { ascending: false })
-    setNotificacoes(data || [])
+    const res = await fetch('/api/notificacoes')
+    if (!res.ok) { setCarregando(false); return }
+    const data = await res.json()
+    setNotificacoes(data)
     setCarregando(false)
   }
 
   async function marcarComoLida(id: string) {
-    await supabase.from('notificacoes').update({ lido: true }).eq('id', id)
+    await fetch(`/api/notificacoes/${id}`, { method: 'PATCH' })
     setNotificacoes(prev => prev.map(n => n.id === id ? { ...n, lido: true } : n))
   }
 

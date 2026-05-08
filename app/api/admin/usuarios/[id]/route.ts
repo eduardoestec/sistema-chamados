@@ -1,39 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { query } from '@/lib/db'
+import { verificarToken } from '@/lib/auth'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-)
-
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params
-
-    if (!id) {
-      return NextResponse.json({ erro: 'ID obrigatorio' }, { status: 400 })
-    }
-
-    // Deletar perfil primeiro (remove dados da tabela profiles)
-    const { error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .delete()
-      .eq('id', id)
-
-    if (profileError) {
-      return NextResponse.json({ erro: profileError.message }, { status: 500 })
-    }
-
-    // Deletar usuário do Supabase Auth via Admin API
-    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id)
-
-    if (authError) {
-      return NextResponse.json({ erro: authError.message }, { status: 500 })
-    }
-
-    return NextResponse.json({ ok: true })
-  } catch {
-    return NextResponse.json({ erro: 'Erro interno' }, { status: 500 })
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const token = req.cookies.get('auth-token')?.value
+  if (!token || !verificarToken(token)) {
+    return NextResponse.json({ erro: 'Não autorizado' }, { status: 401 })
   }
+
+  const { id } = await params
+  if (!id) return NextResponse.json({ erro: 'ID obrigatorio' }, { status: 400 })
+
+  await query('DELETE FROM usuarios WHERE id = $1', [id])
+  return NextResponse.json({ ok: true })
+}
+
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const token = req.cookies.get('auth-token')?.value
+  if (!token || !verificarToken(token)) {
+    return NextResponse.json({ erro: 'Não autorizado' }, { status: 401 })
+  }
+
+  const { id } = await params
+  const body = await req.json()
+
+  if (typeof body.ativo === 'boolean') {
+    await query('UPDATE usuarios SET ativo = $1 WHERE id = $2', [body.ativo, id])
+    return NextResponse.json({ ok: true })
+  }
+
+  return NextResponse.json({ erro: 'Nada a atualizar' }, { status: 400 })
 }

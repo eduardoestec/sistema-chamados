@@ -1,15 +1,9 @@
-﻿'use client'
+'use client'
 export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
 import { QrCode, BarChart2, LogOut, Wrench, Users, Bell, FileText, Clock, AlertTriangle, User } from 'lucide-react'
-
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 const statusLabel = { enviado: 'Enviado', recebido: 'Recebido', em_analise: 'Em Analise', em_andamento: 'Em Andamento', resolvido: 'Resolvido' }
 const urgenciaCor = {
@@ -31,17 +25,16 @@ export default function AdminPage() {
   const [notificacoesNaoLidas, setNotificacoesNaoLidas] = useState(0)
 
   useEffect(() => {
+    const adminId = localStorage.getItem('admin_id') || ''
+    if (!adminId) { router.push('/admin/login'); return }
     const nivelAtual = localStorage.getItem('admin_nivel') || ''
     setNivel(nivelAtual)
     setAdminNome(localStorage.getItem('admin_nome') || '')
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) { router.push('/admin/login'); return }
-      carregarChamados()
-      if (nivelAtual === 'gestor') carregarNotificacoes()
-    })
+    carregarChamados()
+    if (nivelAtual === 'gestor') carregarNotificacoes()
 
     let intervalo: ReturnType<typeof setInterval> | null = null
-    if (localStorage.getItem('admin_nivel') === 'gestor') {
+    if (nivelAtual === 'gestor') {
       intervalo = setInterval(carregarNotificacoes, 30000)
     }
     return () => { if (intervalo) clearInterval(intervalo) }
@@ -49,38 +42,29 @@ export default function AdminPage() {
 
   async function carregarChamados() {
     setCarregando(true)
-    const { data: lista } = await supabase
-      .from('chamados')
-      .select('*')
-      .order('criado_em', { ascending: false })
-
-    if (!lista) { setChamados([]); setCarregando(false); return }
-
-    // Buscar nomes dos responsáveis separadamente para não filtrar chamados sem responsavel_id
-    const ids = [...new Set(lista.map(c => c.responsavel_id).filter(Boolean))]
-    let nomes: Record<string, string> = {}
-    if (ids.length > 0) {
-      const { data: perfis } = await supabase
-        .from('profiles')
-        .select('id, nome')
-        .in('id', ids)
-      for (const p of perfis || []) nomes[p.id] = p.nome
+    const res = await fetch('/api/chamados')
+    if (!res.ok) {
+      if (res.status === 401) router.push('/admin/login')
+      setCarregando(false)
+      return
     }
-
-    setChamados(lista.map(c => ({ ...c, responsavel_nome: nomes[c.responsavel_id] || null })))
+    const lista = await res.json()
+    setChamados(lista)
     setCarregando(false)
   }
 
   async function carregarNotificacoes() {
-    const { count } = await supabase
-      .from('notificacoes')
-      .select('*', { count: 'exact', head: true })
-      .eq('lido', false)
+    const res = await fetch('/api/notificacoes?count=true&unread=true')
+    if (!res.ok) return
+    const { count } = await res.json()
     setNotificacoesNaoLidas(count || 0)
   }
 
   async function sair() {
-    await supabase.auth.signOut()
+    await fetch('/api/auth/logout', { method: 'POST' })
+    localStorage.removeItem('admin_id')
+    localStorage.removeItem('admin_nome')
+    localStorage.removeItem('admin_nivel')
     router.push('/admin/login')
   }
 

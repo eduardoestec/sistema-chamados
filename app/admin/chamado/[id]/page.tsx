@@ -1,15 +1,9 @@
-﻿'use client'
+'use client'
 export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
 import EditorFoto from '@/components/EditorFoto'
 import { UserCheck, MessageSquare, ArrowRight } from 'lucide-react'
-
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 const statusLabel: Record<string, string> = { enviado: 'Enviado', recebido: 'Recebido', em_analise: 'Em Analise', em_andamento: 'Em Andamento', resolvido: 'Resolvido' }
 const statusOrdem = ['enviado', 'recebido', 'em_analise', 'em_andamento', 'resolvido']
@@ -34,84 +28,52 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
   const [chamadoId, setChamadoId] = useState<string>('')
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) { router.push('/admin/login'); return }
-      const uid = data.session.user.id
-      const nome = localStorage.getItem('admin_nome') || data.session.user.email || 'Tecnico'
-      setAdminId(uid)
-      setAdminNome(nome)
-      params.then(p => {
-        setChamadoId(p.id)
-        carregarChamado(p.id, uid, nome)
-      })
+    const id = localStorage.getItem('admin_id') || ''
+    const nome = localStorage.getItem('admin_nome') || 'Tecnico'
+    if (!id) { router.push('/admin/login'); return }
+    setAdminId(id)
+    setAdminNome(nome)
+    params.then(p => {
+      setChamadoId(p.id)
+      carregarChamado(p.id)
     })
   }, [])
 
-  async function carregarChamado(id: string, uid: string, nome: string) {
-    const { data: c } = await supabase.from('chamados').select('*, salas(nome)').eq('id', id).single()
-    const { data: h } = await supabase.from('chamado_historico').select('*').eq('chamado_id', id).order('criado_em', { ascending: true })
-    const { data: a } = await supabase.from('anexos').select('*').eq('chamado_id', id).order('criado_em', { ascending: true })
+  async function carregarChamado(id: string) {
+    const res = await fetch(`/api/chamados/${id}`)
+    if (!res.ok) { if (res.status === 401) router.push('/admin/login'); return }
+    const { chamado: c, historico: h, anexos: a, responsavel_nome } = await res.json()
     setChamado(c)
-    setSalaNome(c?.salas?.nome || null)
+    setSalaNome(c?.sala_nome || null)
     setHistorico(h || [])
     setAnexos(a || [])
     setNovoStatus(c.status)
+    setResponsavelNome(responsavel_nome)
 
-    // Buscar nome do responsável atual
-    if (c?.responsavel_id) {
-      const { data: perfil } = await supabase
-        .from('profiles')
-        .select('nome')
-        .eq('id', c.responsavel_id)
-        .single()
-      setResponsavelNome(perfil?.nome || null)
-    } else {
-      setResponsavelNome(null)
-    }
-
-    // Auto-atribuição: se status for 'enviado', muda para 'recebido' e atribui ao técnico
     if (c?.status === 'enviado') {
-      await supabase.from('chamados').update({
-        status: 'recebido',
-        responsavel_id: uid,
-        atualizado_em: new Date().toISOString()
-      }).eq('id', id)
-      await supabase.from('chamado_historico').insert({
-        chamado_id: id,
-        status_anterior: 'enviado',
-        status_novo: 'recebido',
-        observacao: 'Chamado recebido por ' + nome,
-        admin_id: uid
+      await fetch(`/api/chamados/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'auto_receber' })
       })
-      setChamado((prev: any) => ({ ...prev, status: 'recebido', responsavel_id: uid }))
-      setNovoStatus('recebido')
-      setResponsavelNome(nome)
+      const res2 = await fetch(`/api/chamados/${id}`)
+      if (res2.ok) {
+        const { chamado: c2, historico: h2, responsavel_nome: rn2 } = await res2.json()
+        setChamado(c2)
+        setHistorico(h2 || [])
+        setNovoStatus(c2.status)
+        setResponsavelNome(rn2)
+      }
     }
   }
 
   async function pegarChamado() {
-    console.log('[pegarChamado] adminId:', adminId)
-    console.log('[pegarChamado] chamadoId:', chamadoId)
-    console.log('[pegarChamado] chamado.id:', chamado?.id)
-    if (!adminId || !chamadoId) {
-      console.warn('[pegarChamado] abortado: adminId ou chamadoId ausente')
-      return
-    }
-    const { data, error } = await supabase
-      .from('chamados')
-      .update({ responsavel_id: adminId, atualizado_em: new Date().toISOString() })
-      .eq('id', chamadoId)
-      .select()
-    console.log('[pegarChamado] update resultado:', data, 'erro:', error)
-    if (error) { alert('Erro ao pegar chamado: ' + error.message); return }
-    const { error: histError } = await supabase.from('chamado_historico').insert({
-      chamado_id: chamadoId,
-      status_anterior: chamado.status,
-      status_novo: chamado.status,
-      observacao: 'Chamado assumido por ' + adminNome,
-      admin_id: adminId
+    if (!chamadoId) return
+    await fetch(`/api/chamados/${chamadoId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'pegar' })
     })
-    console.log('[pegarChamado] historico erro:', histError)
     setChamado((prev: any) => ({ ...prev, responsavel_id: adminId }))
     setResponsavelNome(adminNome)
   }
@@ -130,80 +92,32 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
   async function salvar() {
     if (!chamado) return
     setSalvando(true)
-    const statusAnterior = chamado.status
-
-    await supabase.from('chamados').update({ status: novoStatus, atualizado_em: new Date().toISOString() }).eq('id', chamado.id)
-
-    await supabase.from('chamado_historico').insert({
-      chamado_id: chamado.id,
-      status_anterior: statusAnterior,
-      status_novo: novoStatus,
-      observacao: observacao || null,
-      admin_id: adminId
+    const fotoFinal = fotoEditada || fotoPreview || null
+    await fetch(`/api/chamados/${chamado.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'salvar', status: novoStatus, observacao: observacao || null, foto: fotoFinal })
     })
-
-    // Notificar gestores sobre a ação realizada
-    if (novoStatus === 'resolvido' && statusAnterior !== 'resolvido') {
-      await supabase.from('notificacoes').insert({
-        titulo: `Chamado resolvido — ${chamado.codigo_unico}`,
-        mensagem: `${adminNome} marcou o chamado ${chamado.codigo_unico} como RESOLVIDO — Sala: ${salaNome || 'N/A'}`,
-        lido: false,
-        destinatario_nivel: 'gestor'
-      })
-    } else if (novoStatus !== statusAnterior) {
-      await supabase.from('notificacoes').insert({
-        titulo: `Status atualizado — ${chamado.codigo_unico}`,
-        mensagem: `${adminNome} alterou o status de "${statusLabel[statusAnterior]}" para "${statusLabel[novoStatus]}" no chamado ${chamado.codigo_unico} — Sala: ${salaNome || 'N/A'}`,
-        lido: false,
-        destinatario_nivel: 'gestor'
-      })
-    } else if (observacao.trim()) {
-      await supabase.from('notificacoes').insert({
-        titulo: `Nova observacao — ${chamado.codigo_unico}`,
-        mensagem: `${adminNome} adicionou uma observacao no chamado ${chamado.codigo_unico}: "${observacao.trim()}"`,
-        lido: false,
-        destinatario_nivel: 'gestor'
-      })
-    }
-
-    const fotoFinal = fotoEditada || fotoPreview
-    if (fotoFinal) {
-      await supabase.from('anexos').insert({
-        chamado_id: chamado.id,
-        url: fotoFinal,
-        tipo: 'equipe',
-        admin_id: adminId
-      })
-    }
-
     setObservacao('')
     setFotoPreview('')
     setFotoEditada('')
-    await carregarChamado(chamado.id, adminId!, adminNome)
+    await carregarChamado(chamado.id)
     setSalvando(false)
     alert('Atualizado com sucesso!')
   }
 
   async function adicionarNota() {
-    if (!observacao.trim()) { alert('Digite uma observação antes de adicionar a nota.'); return }
-    if (!chamado) return
+    if (!observacao.trim() || !chamado) return
     setAdicionandoNota(true)
-    const { error } = await supabase.from('chamado_historico').insert({
-      chamado_id: chamado.id,
-      status_anterior: chamado.status,
-      status_novo: chamado.status,
-      observacao: observacao.trim(),
-      admin_id: adminId
+    const res = await fetch(`/api/chamados/${chamado.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'nota', observacao: observacao.trim() })
     })
-    if (error) { alert('Erro ao adicionar nota: ' + error.message); setAdicionandoNota(false); return }
-    await supabase.from('notificacoes').insert({
-      titulo: `Nova observacao — ${chamado.codigo_unico}`,
-      mensagem: `${adminNome} adicionou uma observacao no chamado ${chamado.codigo_unico}: "${observacao.trim()}"`,
-      lido: false,
-      destinatario_nivel: 'gestor'
-    })
+    const data = await res.json()
+    if (!res.ok) { alert('Erro ao adicionar nota: ' + data.erro); setAdicionandoNota(false); return }
     setObservacao('')
-    await carregarChamado(chamado.id, adminId!, adminNome)
+    await carregarChamado(chamado.id)
     setAdicionandoNota(false)
   }
 
@@ -249,7 +163,6 @@ export default function DetalheChamado({ params }: { params: Promise<{ id: strin
                 <span className={`text-xs px-3 py-1.5 rounded-lg font-medium ${
                   chamado.urgencia === 'baixa' ? 'bg-[#16a34a]/10 text-[#16a34a] border border-[#16a34a]/20' :
                   chamado.urgencia === 'media' ? 'bg-[#d97706]/10 text-[#d97706] border border-[#d97706]/20' :
-                  chamado.urgencia === 'alta' ? 'bg-[#dc2626]/10 text-[#dc2626] border border-[#dc2626]/20' :
                   'bg-[#dc2626]/10 text-[#dc2626] border border-[#dc2626]/20'
                 }`}>
                   {urgenciaLabel[chamado.urgencia]}

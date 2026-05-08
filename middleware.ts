@@ -1,47 +1,20 @@
-import { createServerClient } from '@supabase/ssr'
+export const runtime = 'nodejs'
 import { NextResponse, type NextRequest } from 'next/server'
+import { verificarToken } from '@/lib/auth'
 
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  if (pathname === '/admin/login') return NextResponse.next()
 
-  // /admin/login é sempre pública — sai imediatamente sem verificar sessão
-  if (pathname === '/admin/login') {
-    return NextResponse.next()
+  const token = request.cookies.get('auth-token')?.value
+  if (!token || !verificarToken(token)) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/admin/login'
+    return NextResponse.redirect(url)
   }
-
-  // Apenas rotas /admin e /admin/* chegam aqui (ver matcher abaixo)
-  const response = NextResponse.next()
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            request.cookies.set(name, value)
-            response.cookies.set(name, value, options)
-          })
-        },
-      },
-    },
-  )
-
-  const { data: { session } } = await supabase.auth.getSession()
-
-  if (!session) {
-    const loginUrl = request.nextUrl.clone()
-    loginUrl.pathname = '/admin/login'
-    return NextResponse.redirect(loginUrl)
-  }
-
-  return response
+  return NextResponse.next()
 }
 
 export const config = {
-  // Intercepta apenas /admin e sub-rotas. Todas as outras rotas passam livres.
   matcher: ['/admin', '/admin/:path*'],
 }

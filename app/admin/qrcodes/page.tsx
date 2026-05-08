@@ -1,15 +1,9 @@
-﻿'use client'
+'use client'
 export const dynamic = 'force-dynamic'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
 import QRCode from 'qrcode'
 import { Plus, Trash2, X, ArrowLeft } from 'lucide-react'
-
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 type Sala = { id: string; nome: string; localizacao: string; qrcode_token: string }
 
@@ -121,34 +115,27 @@ export default function QRCodesPage() {
 
   useEffect(() => {
     if (localStorage.getItem('admin_nivel') !== 'gestor') { router.push('/admin'); return }
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) { router.push('/admin/login'); return }
-      carregarSalas()
-    })
+    if (!localStorage.getItem('admin_id')) { router.push('/admin/login'); return }
+    carregarSalas()
   }, [])
 
   async function carregarSalas() {
     setCarregando(true)
-    const { data } = await supabase.from('salas').select('*').order('nome')
-    setSalas(data || [])
+    const res = await fetch('/api/salas')
+    if (!res.ok) { setCarregando(false); return }
+    const data = await res.json()
+    setSalas(data)
     setCarregando(false)
   }
 
   async function criarSala(nome: string, localizacao: string): Promise<string | null> {
-    // Verificar duplicatas
-    const { data: existente } = await supabase
-      .from('salas')
-      .select('id')
-      .ilike('nome', nome)
-      .ilike('localizacao', localizacao)
-      .limit(1)
-    if (existente && existente.length > 0) {
-      return 'Já existe uma sala com este nome e localização'
-    }
-
-    const token = nome.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now()
-    const { error } = await supabase.from('salas').insert({ nome, localizacao, qrcode_token: token })
-    if (error) return error.message
+    const res = await fetch('/api/salas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome, localizacao })
+    })
+    const data = await res.json()
+    if (!res.ok) return data.erro || 'Erro ao criar sala'
     setModalNova(false)
     carregarSalas()
     return null
@@ -160,21 +147,9 @@ export default function QRCodesPage() {
   }
 
   async function excluirSala(id: string) {
-    const { count } = await supabase
-      .from('chamados')
-      .select('*', { count: 'exact', head: true })
-      .eq('sala_id', id)
-
-    if (count && count > 0) {
-      mostrarErro(`Não é possível excluir esta sala. Existem ${count} chamado${count > 1 ? 's' : ''} vinculado${count > 1 ? 's' : ''} a ela.`)
-      return
-    }
-
-    const { error } = await supabase.from('salas').delete().eq('id', id)
-    if (error) {
-      mostrarErro('Erro ao excluir sala: ' + error.message)
-      return
-    }
+    const res = await fetch(`/api/salas/${id}`, { method: 'DELETE' })
+    const data = await res.json()
+    if (!res.ok) { mostrarErro(data.erro || 'Erro ao excluir sala'); return }
     carregarSalas()
   }
 

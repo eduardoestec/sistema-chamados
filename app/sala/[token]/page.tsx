@@ -1,14 +1,9 @@
-﻿import Link from 'next/link'
+import Link from 'next/link'
 import Image from 'next/image'
 import { Wrench, Search, MapPin } from 'lucide-react'
-import { createClient } from '@supabase/supabase-js'
+import { queryOne } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 interface Props {
   params: Promise<{ token: string }>
@@ -17,11 +12,10 @@ interface Props {
 export default async function SalaPage({ params }: Props) {
   const { token } = await params
 
-  const { data: sala } = await supabase
-    .from('salas')
-    .select('*')
-    .eq('qrcode_token', token)
-    .single()
+  const sala = await queryOne<any>(
+    'SELECT * FROM salas WHERE qrcode_token = $1',
+    [token]
+  )
 
   return (
     <main className='min-h-screen bg-[#f8f7f7] flex'>
@@ -48,7 +42,6 @@ export default async function SalaPage({ params }: Props) {
         <div className='bg-white rounded-xl shadow-sm w-full max-w-md p-8 flex flex-col min-h-96'>
 
           <div className='mb-auto'>
-            {/* Logo */}
             <div className='flex justify-center mb-6'>
               <Image
                 src='/AS - 350x350.png'
@@ -59,7 +52,6 @@ export default async function SalaPage({ params }: Props) {
               />
             </div>
 
-            {/* Título e subtítulo */}
             <div className='text-center mb-6'>
               <h1 className='text-2xl font-bold text-[#2c2c2c] tracking-tight mb-2'>Sistema de Chamados</h1>
               <p className='text-sm text-[#6b7280]'>Manutenção Predial</p>

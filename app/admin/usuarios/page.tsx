@@ -1,14 +1,8 @@
-﻿'use client'
+'use client'
 export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
 import { ArrowLeft, Plus, X, UserX, UserCheck, Trash2, KeyRound } from 'lucide-react'
-
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 type Tecnico = {
   id: string
@@ -158,46 +152,18 @@ export default function UsuariosPage() {
   useEffect(() => {
     if (localStorage.getItem('admin_nivel') !== 'gestor') { router.push('/admin'); return }
     setIsGestor(true)
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) { router.push('/admin/login'); return }
-      setAdminId(data.session.user.id)
-      carregarTecnicos()
-    })
+    const id = localStorage.getItem('admin_id')
+    if (!id) { router.push('/admin/login'); return }
+    setAdminId(id)
+    carregarTecnicos()
   }, [])
 
   async function carregarTecnicos() {
     setCarregando(true)
-
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('nome')
-
-    if (!profiles) { setCarregando(false); return }
-
-    // Buscar contagens do historico por admin_id
-    const { data: historico } = await supabase
-      .from('chamado_historico')
-      .select('admin_id, status_novo')
-      .not('admin_id', 'is', null)
-
-    const contagemResolvidos: Record<string, number> = {}
-    const contagemAndamento: Record<string, number> = {}
-
-    for (const h of historico || []) {
-      if (h.status_novo === 'resolvido') {
-        contagemResolvidos[h.admin_id] = (contagemResolvidos[h.admin_id] || 0) + 1
-      }
-      if (h.status_novo === 'em_andamento') {
-        contagemAndamento[h.admin_id] = (contagemAndamento[h.admin_id] || 0) + 1
-      }
-    }
-
-    setTecnicos(profiles.map(p => ({
-      ...p,
-      resolvidos: contagemResolvidos[p.id] || 0,
-      em_andamento: contagemAndamento[p.id] || 0,
-    })))
+    const res = await fetch('/api/usuarios')
+    if (!res.ok) { setCarregando(false); return }
+    const data = await res.json()
+    setTecnicos(data)
     setCarregando(false)
   }
 
@@ -223,7 +189,11 @@ export default function UsuariosPage() {
     if (id === adminId) { mostrarErro('Você não pode desativar sua própria conta.'); return }
     const acao = ativo ? 'desativar' : 'ativar'
     if (!confirm(`Deseja ${acao} este usuário?`)) return
-    await supabase.from('profiles').update({ ativo: !ativo }).eq('id', id)
+    await fetch(`/api/admin/usuarios/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ativo: !ativo })
+    })
     carregarTecnicos()
   }
 

@@ -1,14 +1,8 @@
-﻿'use client'
+'use client'
 export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
-
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 
 const CORES = ['#604404', '#05df72', '#fb2c36', '#6a7282', '#364153', '#fefce8', '#e5e7eb']
 
@@ -19,15 +13,15 @@ export default function RelatoriosPage() {
 
   useEffect(() => {
     if (localStorage.getItem('admin_nivel') !== 'gestor') { router.push('/admin'); return }
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) { router.push('/admin/login'); return }
-      carregarDados()
-    })
+    if (!localStorage.getItem('admin_id')) { router.push('/admin/login'); return }
+    carregarDados()
   }, [])
 
   async function carregarDados() {
-    const { data } = await supabase.from('chamados').select('*').order('criado_em', { ascending: false })
-    setChamados(data || [])
+    const res = await fetch('/api/chamados')
+    if (!res.ok) { setCarregando(false); return }
+    const data = await res.json()
+    setChamados(data)
     setCarregando(false)
   }
 

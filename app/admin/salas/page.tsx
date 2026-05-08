@@ -1,14 +1,9 @@
 'use client'
+export const dynamic = 'force-dynamic'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
 import QRCode from 'qrcode'
 import { ArrowLeft, Plus, QrCode, Trash2, X } from 'lucide-react'
-
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 function ModalQR({ sala, onFechar }: { sala: any, onFechar: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -51,17 +46,17 @@ function ModalNovaSala({ onSalvar, onFechar }: { onSalvar: (nome: string, locali
         <div className='mb-4'>
           <label className='block text-sm font-semibold text-gray-700 mb-1'>Nome</label>
           <input value={nome} onChange={e => setNome(e.target.value)}
-            className='w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#767171]'
+            className='w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#604404]'
             placeholder='Ex: Sala de Reuniao' />
         </div>
         <div className='mb-6'>
           <label className='block text-sm font-semibold text-gray-700 mb-1'>Localizacao</label>
           <input value={localizacao} onChange={e => setLocalizacao(e.target.value)}
-            className='w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#767171]'
+            className='w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#604404]'
             placeholder='Ex: 2° andar, bloco B' />
         </div>
         <button onClick={() => nome.trim() && onSalvar(nome.trim(), localizacao.trim())}
-          className='w-full bg-[#767171] hover:bg-[#5a5555] text-white font-bold py-3 rounded-xl transition'>
+          className='w-full bg-[#604404] hover:bg-[#4a3203] text-white font-bold py-3 rounded-xl transition'>
           Criar Sala
         </button>
       </div>
@@ -77,29 +72,37 @@ export default function SalasPage() {
   const [salaQR, setSalaQR] = useState<any>(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) { router.push('/admin/login'); return }
-      carregarSalas()
-    })
+    if (!localStorage.getItem('admin_id')) { router.push('/admin/login'); return }
+    carregarSalas()
   }, [])
 
   async function carregarSalas() {
     setCarregando(true)
-    const { data } = await supabase.from('salas').select('*').order('criado_em', { ascending: false })
-    setSalas(data || [])
+    const res = await fetch('/api/salas?order=criado_em')
+    if (!res.ok) { setCarregando(false); return }
+    const data = await res.json()
+    setSalas(data)
     setCarregando(false)
   }
 
   async function criarSala(nome: string, localizacao: string) {
-    const token = nome.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now()
-    await supabase.from('salas').insert({ nome, localizacao, qrcode_token: token })
+    await fetch('/api/salas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome, localizacao })
+    })
     setModalNova(false)
     carregarSalas()
   }
 
   async function apagarSala(id: string) {
     if (!confirm('Tem certeza que deseja apagar esta sala?')) return
-    await supabase.from('salas').delete().eq('id', id)
+    const res = await fetch(`/api/salas/${id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const data = await res.json()
+      alert(data.erro || 'Erro ao apagar sala')
+      return
+    }
     carregarSalas()
   }
 
@@ -114,7 +117,7 @@ export default function SalasPage() {
           <p className='text-sm text-gray-500'>{salas.length} salas cadastradas</p>
         </div>
         <button onClick={() => setModalNova(true)}
-          className='flex items-center gap-2 bg-[#767171] hover:bg-[#5a5555] text-white font-bold px-4 py-2 rounded-xl transition'>
+          className='flex items-center gap-2 bg-[#604404] hover:bg-[#4a3203] text-white font-bold px-4 py-2 rounded-xl transition'>
           <Plus size={16} /> Nova Sala
         </button>
       </div>
@@ -129,7 +132,7 @@ export default function SalasPage() {
             </div>
             <div className='flex gap-2 flex-shrink-0'>
               <button onClick={() => setSalaQR(s)}
-                className='flex items-center gap-1 text-sm text-gray-600 hover:text-[#767171] border border-gray-200 px-3 py-1.5 rounded-lg transition'>
+                className='flex items-center gap-1 text-sm text-gray-600 hover:text-[#604404] border border-gray-200 px-3 py-1.5 rounded-lg transition'>
                 <QrCode size={15} /> QR Code
               </button>
               <button onClick={() => apagarSala(s.id)}
